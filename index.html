@@ -163,17 +163,34 @@ input,select,textarea{outline:none}
 
 /* Photo capture */
 .photo-area{border:2px dashed var(--border2);border-radius:var(--radius);overflow:hidden;
-  cursor:pointer;background:#FAFBFC;transition:border-color .15s;margin-bottom:12px;min-height:80px;
-  display:flex;align-items:center;justify-content:center}
-.photo-area:hover{border-color:var(--accent)}
-.photo-area img{width:100%;max-height:180px;object-fit:cover;display:block}
+  background:#FAFBFC;transition:border-color .15s;margin-bottom:12px;min-height:80px;
+  display:flex;align-items:center;justify-content:center;position:relative}
+.photo-area.required{border-color:#FCA5A5;background:#FFF5F5}
+.photo-area img{width:100%;max-height:200px;object-fit:cover;display:block}
 .photo-placeholder{display:flex;flex-direction:column;align-items:center;gap:6px;padding:20px;color:var(--text3)}
 .photo-placeholder svg{width:28px;height:28px}
 .photo-placeholder span{font-size:12px}
+.photo-required-badge{position:absolute;top:8px;right:8px;background:#EF4444;color:#fff;
+  font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px}
+/* Camera modal */
+.cam-modal{position:fixed;inset:0;background:#000;z-index:500;display:flex;flex-direction:column}
+.cam-video{flex:1;width:100%;object-fit:cover}
+.cam-controls{padding:20px;display:flex;justify-content:center;gap:20px;background:#000;flex-shrink:0}
+.cam-snap{width:64px;height:64px;border-radius:50%;border:4px solid #fff;background:#fff;cursor:pointer;
+  display:flex;align-items:center;justify-content:center}
+.cam-snap svg{width:28px;height:28px;color:#0C1B3A}
+.cam-cancel{width:48px;height:48px;border-radius:50%;border:2px solid rgba(255,255,255,.4);
+  background:rgba(255,255,255,.1);cursor:pointer;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;align-self:center}
+.cam-preview-wrap{flex:1;width:100%;position:relative}
+.cam-preview-img{width:100%;height:100%;object-fit:cover}
+.cam-retake{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);
+  padding:10px 24px;border-radius:20px;border:2px solid #fff;background:rgba(0,0,0,.5);
+  color:#fff;font-size:13px;font-weight:600;cursor:pointer}
+/* GPS */
 .gps-row{display:flex;align-items:center;gap:8px;margin-bottom:12px}
 .gps-tag{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:20px;
-  background:#F0FDF4;border:1px solid #BBF7D0;font-size:11px;color:#166534;font-weight:500}
-.gps-tag svg{width:13px;height:13px}
+  background:#F0FDF4;border:1px solid #BBF7D0;font-size:11px;color:#166534;font-weight:500;flex-wrap:wrap}
+.gps-tag svg{width:13px;height:13px;flex-shrink:0}
 .btn-gps{padding:7px 14px;border-radius:8px;border:1.5px solid var(--border2);background:#fff;
   cursor:pointer;display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--text2)}
 
@@ -272,7 +289,7 @@ input,select,textarea{outline:none}
 
 <!-- ── CONFIG: ใส่ URL ของ Apps Script Web App ตรงนี้ ─── -->
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbyLY5WEZ4dzylpH1O5i8c88JEv0Sq_6q-xFc3uGGX_6je2DjRimWMrqP1ufgjtHYmdh/exec";
+const API_URL = "YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
 // ^ วิธีได้ URL: Apps Script → Deploy → New deployment → Web app → Copy URL
 </script>
 
@@ -416,24 +433,30 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyLY5WEZ4dzylpH1O5i8c88
         <div class="card" style="margin-bottom:14px">
           <div class="card-header"><span class="card-title">บันทึกการทำงาน</span></div>
           <div class="card-body">
-            <!-- Photo area -->
+            <!-- Photo area - camera only, mandatory -->
             <div style="margin-bottom:10px">
-              <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">📷 รูปถ่าย (ไม่บังคับ)</div>
-              <div class="photo-area" id="photo-preview" onclick="triggerCamera()">
+              <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;display:flex;align-items:center;gap:6px">
+                📷 รูปถ่าย <span style="background:#EF4444;color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px">บังคับ</span>
+              </div>
+              <div class="photo-area required" id="photo-preview" onclick="openCamera()" style="cursor:pointer;min-height:120px">
                 <div class="photo-placeholder">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                  <span>แตะเพื่อถ่ายรูปหรือเลือกรูป</span>
+                  <span style="font-weight:600;color:#EF4444">แตะเพื่อเปิดกล้องถ่ายรูป</span>
+                  <span style="font-size:10px;color:var(--text3)">ไม่สามารถเลือกรูปจาก gallery ได้</span>
                 </div>
               </div>
-              <input type="file" id="camera-input" accept="image/*" capture="user" style="display:none" onchange="handlePhoto(this)">
+              <canvas id="cam-canvas" style="display:none"></canvas>
             </div>
-            <!-- GPS -->
-            <div class="gps-row">
-              <button class="btn-gps" onclick="getGPS()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
-                GPS
-              </button>
-              <div id="gps-status" style="font-size:11px;color:var(--text3)">ยังไม่ได้รับ GPS</div>
+
+            <!-- GPS auto -->
+            <div style="margin-bottom:12px">
+              <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;display:flex;align-items:center;gap:6px">
+                &#128205; พิกัดที่ตั้ง <span style="background:#EF4444;color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px">บังคับ</span>
+              </div>
+              <div id="gps-status" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:9px;border:1.5px solid var(--border2);background:#FAFBFC;font-size:12px;color:var(--text3);min-height:42px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="flex-shrink:0"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+                <span id="gps-text">กำลังระบุตำแหน่ง...</span>
+              </div>
             </div>
             <!-- Note -->
             <div style="margin-bottom:14px">
@@ -565,6 +588,31 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyLY5WEZ4dzylpH1O5i8c88
 <!-- /page-app -->
 
 </div><!-- /app -->
+
+<!-- ── CAMERA MODAL ─────────────────────────────────────── -->
+<div id="cam-modal" style="display:none;position:fixed;inset:0;background:#000;z-index:500;flex-direction:column">
+  <div style="padding:12px;display:flex;justify-content:flex-end">
+    <button onclick="closeCamera()" style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer">✕</button>
+  </div>
+  <!-- Video stream -->
+  <div id="cam-snap-wrap" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center">
+    <video id="cam-video" autoplay playsinline style="width:100%;max-height:60vh;object-fit:cover"></video>
+    <div style="padding:24px;display:flex;gap:20px;align-items:center;justify-content:center">
+      <button onclick="snapPhoto()" style="width:68px;height:68px;border-radius:50%;border:4px solid #fff;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#0C1B3A" stroke-width="2" width="30" height="30"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      </button>
+    </div>
+    <div style="color:rgba(255,255,255,.6);font-size:12px;padding-bottom:16px">กดปุ่มเพื่อถ่ายรูป</div>
+  </div>
+  <!-- Preview after snap -->
+  <div id="cam-preview-wrap" style="display:none;flex:1;flex-direction:column;align-items:center">
+    <img id="cam-preview-img" style="width:100%;max-height:60vh;object-fit:cover">
+    <div style="padding:20px;display:flex;gap:12px;width:100%;max-width:400px">
+      <button onclick="retakePhoto()" style="flex:1;padding:12px;border-radius:10px;border:2px solid rgba(255,255,255,.3);background:transparent;color:#fff;font-size:13px;font-weight:600;cursor:pointer">ถ่ายใหม่</button>
+      <button onclick="confirmPhoto()" style="flex:1;padding:12px;border-radius:10px;border:none;background:#10B981;color:#fff;font-size:13px;font-weight:600;cursor:pointer">✓ ใช้รูปนี้</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── GLOBAL COMPONENTS ─────────────────────────────────── -->
 <div class="toast" id="toast"></div>
@@ -774,6 +822,8 @@ function startClock() {
 //  CHECKIN / CHECKOUT
 // ════════════════════════════════════════════════════════════
 async function doCheckin() {
+  if (!state.photoBase64) { showToast("กรุณาถ่ายรูปก่อนเช็คอิน", "error"); openCamera(); return; }
+  if (!state.lat || !state.lng) { showToast("กรุณารอรับ GPS ก่อนเช็คอิน", "error"); return; }
   showLoader();
   try {
     const res = await api("checkin", {
@@ -792,6 +842,8 @@ async function doCheckin() {
 }
 
 async function doCheckout() {
+  if (!state.photoBase64) { showToast("กรุณาถ่ายรูปก่อนเช็คเอาท์", "error"); openCamera(); return; }
+  if (!state.lat || !state.lng) { showToast("กรุณารอรับ GPS ก่อนเช็คเอาท์", "error"); return; }
   showLoader();
   try {
     const res = await api("checkout", {
@@ -811,41 +863,118 @@ async function doCheckout() {
 }
 
 // ════════════════════════════════════════════════════════════
-//  PHOTO
+//  CAMERA (real-time only, no gallery)
 // ════════════════════════════════════════════════════════════
-function triggerCamera() { document.getElementById("camera-input").click(); }
-function handlePhoto(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    state.photoBase64 = e.target.result;
-    const prev = document.getElementById("photo-preview");
-    prev.innerHTML = `<img src="${e.target.result}" style="width:100%;max-height:180px;object-fit:cover">`;
-  };
-  reader.readAsDataURL(file);
+let camStream = null;
+
+function openCamera() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showToast("Browser ไม่รองรับกล้อง", "error"); return;
+  }
+  const modal = document.getElementById("cam-modal");
+  modal.style.display = "flex";
+  const video = document.getElementById("cam-video");
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width:{ ideal:1280 }, height:{ ideal:720 } }, audio: false })
+    .then(stream => {
+      camStream = stream;
+      video.srcObject = stream;
+      video.play();
+      document.getElementById("cam-preview-wrap").style.display = "none";
+      document.getElementById("cam-snap-wrap").style.display    = "flex";
+    })
+    .catch(err => {
+      closeCamera();
+      showToast("ไม่สามารถเข้าถึงกล้องได้: " + err.message, "error");
+    });
 }
+
+function snapPhoto() {
+  const video  = document.getElementById("cam-video");
+  const canvas = document.getElementById("cam-canvas");
+  canvas.width  = video.videoWidth  || 640;
+  canvas.height = video.videoHeight || 480;
+  canvas.getContext("2d").drawImage(video, 0, 0);
+  const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+  state.photoBase64 = dataUrl;
+  // Show preview inside modal
+  document.getElementById("cam-preview-img").src = dataUrl;
+  document.getElementById("cam-preview-wrap").style.display = "block";
+  document.getElementById("cam-snap-wrap").style.display    = "none";
+  // Stop stream
+  if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+}
+
+function retakePhoto() {
+  state.photoBase64 = null;
+  document.getElementById("cam-preview-wrap").style.display = "none";
+  document.getElementById("cam-snap-wrap").style.display    = "flex";
+  // Restart stream
+  const video = document.getElementById("cam-video");
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false })
+    .then(stream => { camStream = stream; video.srcObject = stream; video.play(); });
+}
+
+function confirmPhoto() {
+  if (!state.photoBase64) return;
+  closeCamera();
+  // Show thumbnail in main UI
+  const prev = document.getElementById("photo-preview");
+  prev.innerHTML = `<img src="${state.photoBase64}" style="width:100%;max-height:200px;object-fit:cover;border-radius:10px"><div style="position:absolute;bottom:8px;right:8px;background:rgba(16,185,129,.9);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px">✓ ถ่ายแล้ว</div>`;
+  prev.style.position = "relative";
+  prev.classList.remove("required");
+  prev.style.border = "2px solid #10B981";
+}
+
+function closeCamera() {
+  if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+  document.getElementById("cam-modal").style.display = "none";
+}
+
 function resetPhoto() {
   state.photoBase64 = null;
-  document.getElementById("camera-input").value = "";
-  document.getElementById("photo-preview").innerHTML = `<div class="photo-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><span>แตะเพื่อถ่ายรูปหรือเลือกรูป</span></div>`;
+  const prev = document.getElementById("photo-preview");
+  prev.className = "photo-area required";
+  prev.style.border = "";
+  prev.style.position = "";
+  prev.innerHTML = `<div class="photo-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><span style="font-weight:600;color:#EF4444">แตะเพื่อเปิดกล้องถ่ายรูป</span><span style="font-size:10px;color:var(--text3)">ไม่สามารถเลือกรูปจาก gallery ได้</span></div>`;
 }
 
 // ════════════════════════════════════════════════════════════
-//  GPS
+//  GPS — auto get + reverse geocode to place name
 // ════════════════════════════════════════════════════════════
-function getGPS() {
-  const el = document.getElementById("gps-status");
-  el.textContent = "กำลังรับ GPS...";
-  if (!navigator.geolocation) { el.textContent = "Browser ไม่รองรับ GPS"; return; }
+function initGPS() {
+  const txt = document.getElementById("gps-text");
+  if (!txt) return;
+  if (!navigator.geolocation) { txt.textContent = "Browser ไม่รองรับ GPS"; return; }
+  txt.textContent = "กำลังระบุตำแหน่ง...";
   navigator.geolocation.getCurrentPosition(
-    pos => {
+    async pos => {
       state.lat = pos.coords.latitude.toFixed(6);
       state.lng = pos.coords.longitude.toFixed(6);
-      document.getElementById("gps-status").innerHTML =
-        `<span style="color:#10B981;font-weight:600">📍 ${state.lat}, ${state.lng}</span>`;
+      txt.textContent = "กำลังแปลงพิกัดเป็นสถานที่...";
+      try {
+        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${state.lat}&lon=${state.lng}&format=json&accept-language=th`);
+        const d = await r.json();
+        const addr = d.address || {};
+        const place = [
+          addr.road || addr.pedestrian || "",
+          addr.suburb || addr.neighbourhood || addr.quarter || "",
+          addr.city_district || addr.district || "",
+          addr.city || addr.town || addr.county || ""
+        ].filter(Boolean).slice(0,3).join(", ");
+        const el = document.getElementById("gps-status");
+        el.style.borderColor = "#10B981";
+        el.style.background  = "#F0FDF4";
+        document.getElementById("gps-text").innerHTML = `<span style="color:#166534;font-weight:600">✓ ${place || (state.lat+", "+state.lng)}</span>`;
+      } catch(e) {
+        document.getElementById("gps-text").innerHTML = `<span style="color:#166534;font-weight:600">✓ ${state.lat}, ${state.lng}</span>`;
+      }
     },
-    err => { el.textContent = "ไม่สามารถรับ GPS ได้"; }
+    err => {
+      document.getElementById("gps-text").textContent = "ไม่สามารถระบุตำแหน่งได้ — กรุณาอนุญาต GPS";
+      document.getElementById("gps-status").style.borderColor = "#FCA5A5";
+    },
+    { timeout: 15000, enableHighAccuracy: true }
   );
 }
 
@@ -969,6 +1098,7 @@ function showSection(name) {
     const bnEl = document.getElementById("bn-" + s);
     if (bnEl) bnEl.classList.toggle("on", s === name);
   });
+  if (name === "home")    { resetPhoto(); initGPS(); }
   if (name === "history") loadHistory();
   if (name === "today")   loadToday();
   if (name === "report")  {} // manual load via button
