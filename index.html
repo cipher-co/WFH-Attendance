@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0C1B3A">
+<title>WFH Attendance</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231E4D8C'/><text y='70' x='50' text-anchor='middle' font-size='50' fill='white'>W</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── RESET & BASE ─────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans Thai',sans-serif;background:#F0F4FA;color:#1E293B;-webkit-font-smoothing:antialiased;min-height:100vh}
+button,input,select,textarea{font-family:inherit}
+input,select,textarea{outline:none}
+
+/* ── CSS VARS ─────────────────────────────────────────────── */
+:root{
+  --navy:#0C1B3A; --navy2:#162D5A; --blue:#1E4D8C; --accent:#3B82F6;
+  --gold:#F59E0B; --green:#10B981; --red:#EF4444; --orange:#F97316;
+  --bg:#F0F4FA; --surface:#FFFFFF; --border:#E2E8F0; --border2:#CBD5E1;
+  --text1:#0F172A; --text2:#475569; --text3:#94A3B8;
+  --radius:12px; --radius-sm:8px; --shadow:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06);
+  --shadow-lg:0 8px 32px rgba(12,27,58,.14);
+}
+
+/* ── LAYOUT ───────────────────────────────────────────────── */
+#app{min-height:100vh}
+.page{display:none;animation:fadeIn .2s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ── LOGIN PAGE ───────────────────────────────────────────── */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#0C1B3A 0%,#1E4D8C 50%,#162D5A 100%);padding:16px}
+.login-box{background:#fff;border-radius:20px;padding:36px 32px;width:100%;max-width:400px;box-shadow:var(--shadow-lg)}
+.login-logo{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#3B82F6,#1E4D8C);
+  display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 6px 20px #3B82F640}
+.login-logo svg{width:26px;height:26px;fill:#fff}
+.login-title{text-align:center;font-size:20px;font-weight:700;color:var(--navy);margin-bottom:4px}
+.login-sub{text-align:center;font-size:13px;color:var(--text2);margin-bottom:28px}
+.tab-row{display:flex;gap:4px;background:#F1F5F9;border-radius:10px;padding:4px;margin-bottom:24px}
+.tab-btn{flex:1;padding:9px;border-radius:7px;border:none;background:transparent;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s}
+.tab-btn.on{background:#fff;color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px}
+.field input,.field select{width:100%;padding:11px 14px;border-radius:9px;border:1.5px solid var(--border2);
+  font-size:14px;color:var(--text1);background:#FAFBFC;transition:border-color .15s}
+.field input:focus,.field select:focus{border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px #3B82F615}
+.btn-primary{width:100%;padding:13px;border-radius:10px;border:none;margin-top:4px;
+  background:linear-gradient(135deg,#3B82F6,#1E4D8C);color:#fff;font-size:14px;font-weight:700;
+  cursor:pointer;box-shadow:0 4px 14px #3B82F640;transition:transform .1s,box-shadow .1s}
+.btn-primary:active{transform:scale(.98)}
+.btn-primary:disabled{opacity:.6;cursor:default}
+.err-msg{color:var(--red);font-size:12px;text-align:center;margin-top:10px;padding:8px;background:#FEF2F2;border-radius:8px}
+
+/* ── APP SHELL ────────────────────────────────────────────── */
+.app-shell{display:flex;min-height:100vh;flex-direction:column}
+/* Topbar */
+.topbar{background:var(--navy);padding:0 20px;height:56px;display:flex;align-items:center;
+  justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:50}
+.topbar-left{display:flex;align-items:center;gap:10px}
+.tb-logo{width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,#3B82F6,#1E4D8C);
+  display:flex;align-items:center;justify-content:center}
+.tb-logo svg{width:14px;height:14px;fill:#fff}
+.tb-title{font-size:14px;font-weight:700;color:#fff}
+.tb-user{font-size:11px;color:rgba(255,255,255,.5)}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.tb-badge{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;
+  background:#3B82F620;color:#93C5FD}
+.tb-badge.admin{background:#F59E0B20;color:#FCD34D}
+.btn-logout{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+  color:rgba(255,255,255,.5);border-radius:7px;padding:5px 10px;font-size:11px;cursor:pointer}
+/* Bottom nav */
+.bnav{display:flex;position:fixed;bottom:0;left:0;right:0;background:#fff;
+  border-top:1px solid var(--border);padding:4px 0 calc(4px + env(safe-area-inset-bottom,0px));
+  box-shadow:0 -2px 12px rgba(0,0,0,.06);z-index:40}
+.bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:5px 2px;background:none;border:none;cursor:pointer;font-size:9px;font-weight:600;color:var(--text3)}
+.bnav-btn.on{color:var(--accent)}
+.bnav-btn svg{width:20px;height:20px}
+/* Main content */
+.main-content{flex:1;padding:16px;padding-bottom:80px;max-width:720px;margin:0 auto;width:100%}
+@media(min-width:768px){
+  .main-content{padding:28px 32px;padding-bottom:32px}
+  .bnav{display:none}
+  .sidebar{display:flex!important}
+  .app-shell{flex-direction:row}
+  .main-area{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+}
+
+/* Sidebar (desktop) */
+.sidebar{display:none;flex-direction:column;width:220px;background:var(--navy);
+  border-right:1px solid var(--navy2);flex-shrink:0;position:sticky;top:0;height:100vh}
+.sb-top{padding:20px 14px 12px;border-bottom:1px solid rgba(255,255,255,.06)}
+.sb-logo-row{display:flex;align-items:center;gap:9px;margin-bottom:16px}
+.sb-logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#3B82F6,#1E4D8C);
+  display:flex;align-items:center;justify-content:center}
+.sb-logo svg{width:15px;height:15px;fill:#fff}
+.sb-title{font-size:13px;font-weight:700;color:#fff}
+.sb-user{background:rgba(255,255,255,.05);border-radius:9px;padding:10px 12px}
+.sb-name{font-size:13px;font-weight:600;color:#fff}
+.sb-empid{font-size:10px;color:rgba(255,255,255,.4);margin-top:1px}
+.sb-dept{font-size:10px;color:rgba(255,255,255,.3)}
+.sb-nav{padding:10px 8px;flex:1}
+.sb-lbl{font-size:9px;font-weight:700;color:rgba(255,255,255,.2);padding:6px 10px;
+  letter-spacing:.8px;text-transform:uppercase}
+.sb-item{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:8px;
+  border:none;background:transparent;cursor:pointer;width:100%;font-size:12px;font-weight:500;
+  color:rgba(255,255,255,.5);transition:all .15s}
+.sb-item:hover{background:rgba(255,255,255,.05);color:rgba(255,255,255,.8)}
+.sb-item.on{background:rgba(59,130,246,.12);color:#93C5FD}
+.sb-item svg{width:16px;height:16px;flex-shrink:0}
+.sb-bottom{padding:12px;border-top:1px solid rgba(255,255,255,.06)}
+.btn-logout-full{width:100%;padding:9px;border-radius:8px;border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.03);color:rgba(255,255,255,.4);font-size:11px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:5px}
+.btn-logout-full:hover{background:rgba(239,68,68,.1);color:#FCA5A5}
+
+/* ── CARDS & COMMON ───────────────────────────────────────── */
+.card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);
+  box-shadow:var(--shadow);overflow:hidden}
+.card-header{padding:14px 18px;border-bottom:1px solid #F1F5F9;display:flex;
+  justify-content:space-between;align-items:center}
+.card-title{font-size:14px;font-weight:700;color:var(--text1)}
+.card-body{padding:16px 18px}
+.section-title{font-size:16px;font-weight:700;color:var(--text1);margin-bottom:14px}
+.badge{display:inline-flex;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700}
+.badge-green{background:#D1FAE5;color:#065F46}
+.badge-blue{background:#DBEAFE;color:#1E40AF}
+.badge-amber{background:#FEF3C7;color:#92400E}
+.badge-red{background:#FEE2E2;color:#991B1B}
+.badge-gray{background:#F1F5F9;color:#475569}
+
+/* ── HOME PAGE ────────────────────────────────────────────── */
+.banner{background:linear-gradient(135deg,var(--blue),var(--navy));border-radius:var(--radius);
+  padding:20px;margin-bottom:16px;position:relative;overflow:hidden}
+.banner::after{content:'';position:absolute;right:-30px;top:-30px;width:120px;height:120px;
+  border-radius:50%;background:rgba(255,255,255,.04)}
+.banner-date{font-size:12px;color:rgba(255,255,255,.6);margin-bottom:4px}
+.banner-name{font-size:18px;font-weight:700;color:#fff}
+.banner-dept{font-size:12px;color:rgba(255,255,255,.5)}
+.banner-status{display:inline-flex;align-items:center;gap:6px;margin-top:12px;
+  padding:6px 12px;border-radius:20px;background:rgba(255,255,255,.1);font-size:12px;font-weight:600;color:#fff}
+.status-dot{width:7px;height:7px;border-radius:50%;background:#94A3B8}
+.status-dot.in{background:#34D399;box-shadow:0 0 6px #34D39980;animation:pulse 2s infinite}
+.status-dot.done{background:#60A5FA}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+.time-display{font-family:'JetBrains Mono',monospace;font-size:36px;font-weight:700;
+  color:var(--navy);letter-spacing:-1px;margin:8px 0 4px}
+.date-display{font-size:12px;color:var(--text2)}
+
+.ci-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.ci-btn{padding:14px 12px;border-radius:var(--radius);border:none;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:5px;font-size:13px;font-weight:700;transition:all .15s}
+.ci-btn:active{transform:scale(.96)}
+.ci-btn:disabled{opacity:.4;cursor:default;transform:none}
+.ci-btn svg{width:22px;height:22px}
+.ci-btn.checkin{background:linear-gradient(135deg,#10B981,#059669);color:#fff;box-shadow:0 4px 14px #10B98140}
+.ci-btn.checkout{background:linear-gradient(135deg,#3B82F6,#1E4D8C);color:#fff;box-shadow:0 4px 14px #3B82F640}
+
+/* Photo capture */
+.photo-area{border:2px dashed var(--border2);border-radius:var(--radius);overflow:hidden;
+  cursor:pointer;background:#FAFBFC;transition:border-color .15s;margin-bottom:12px;min-height:80px;
+  display:flex;align-items:center;justify-content:center}
+.photo-area:hover{border-color:var(--accent)}
+.photo-area img{width:100%;max-height:180px;object-fit:cover;display:block}
+.photo-placeholder{display:flex;flex-direction:column;align-items:center;gap:6px;padding:20px;color:var(--text3)}
+.photo-placeholder svg{width:28px;height:28px}
+.photo-placeholder span{font-size:12px}
+.gps-row{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.gps-tag{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:20px;
+  background:#F0FDF4;border:1px solid #BBF7D0;font-size:11px;color:#166534;font-weight:500}
+.gps-tag svg{width:13px;height:13px}
+.btn-gps{padding:7px 14px;border-radius:8px;border:1.5px solid var(--border2);background:#fff;
+  cursor:pointer;display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--text2)}
+
+/* Stat cards */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.stat-card{background:#fff;border-radius:var(--radius);padding:14px;border:1px solid var(--border)}
+.stat-val{font-size:24px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--navy)}
+.stat-lbl{font-size:11px;color:var(--text2);margin-top:3px}
+
+/* ── HISTORY PAGE ─────────────────────────────────────────── */
+.filter-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.filter-select{padding:8px 12px;border-radius:8px;border:1.5px solid var(--border2);
+  font-size:12px;color:var(--text1);background:#fff;cursor:pointer}
+.hist-card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);
+  padding:14px 16px;margin-bottom:8px;box-shadow:var(--shadow)}
+.hist-date{font-size:13px;font-weight:700;color:var(--text1);margin-bottom:8px}
+.hist-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.hist-label{font-size:11px;color:var(--text2)}
+.hist-val{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;color:var(--text1)}
+.hist-hours{font-size:12px;font-weight:700;color:var(--accent)}
+.empty-state{text-align:center;padding:48px 20px;color:var(--text3)}
+.empty-state svg{width:40px;height:40px;margin:0 auto 12px;display:block;opacity:.4}
+
+/* ── ADMIN PAGES ──────────────────────────────────────────── */
+.admin-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px}
+@media(min-width:600px){.admin-summary{grid-template-columns:repeat(4,1fr)}}
+.sum-card{background:#fff;border-radius:var(--radius);padding:16px;border:1px solid var(--border);text-align:center}
+.sum-num{font-size:28px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.sum-lbl{font-size:11px;color:var(--text2);margin-top:3px}
+.sum-card.green .sum-num{color:#10B981}
+.sum-card.blue .sum-num{color:#3B82F6}
+.sum-card.amber .sum-num{color:#F59E0B}
+.sum-card.navy .sum-num{color:var(--navy)}
+
+.admin-table{width:100%;border-collapse:collapse;font-size:12px}
+.admin-table th{text-align:left;padding:10px 12px;font-size:10px;font-weight:700;
+  color:var(--text2);border-bottom:2px solid var(--border);white-space:nowrap}
+.admin-table td{padding:10px 12px;border-bottom:1px solid #F8FAFC;vertical-align:middle}
+.admin-table tr:last-child td{border-bottom:none}
+.admin-table tr:hover td{background:#F8FAFC}
+.avatar{width:28px;height:28px;border-radius:8px;background:#EFF6FF;display:flex;
+  align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--blue);flex-shrink:0}
+.photo-thumb{width:32px;height:32px;border-radius:6px;object-fit:cover;cursor:pointer;border:1px solid var(--border)}
+
+.search-bar{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid var(--border2);
+  border-radius:10px;padding:8px 14px;margin-bottom:14px}
+.search-bar svg{width:16px;height:16px;color:var(--text3);flex-shrink:0}
+.search-input{border:none;outline:none;font-size:13px;color:var(--text1);flex:1;background:transparent}
+
+/* ── MODAL ────────────────────────────────────────────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;
+  align-items:flex-end;justify-content:center;z-index:200;backdrop-filter:blur(4px)}
+.modal-box{background:#fff;border-radius:20px 20px 0 0;padding:24px 20px;
+  width:100%;max-height:85vh;overflow-y:auto;animation:slideUp .2s ease}
+@media(min-width:600px){
+  .modal-overlay{align-items:center;padding:20px}
+  .modal-box{border-radius:20px;max-width:440px;width:100%}
+}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:none;opacity:1}}
+.modal-title{font-size:16px;font-weight:700;color:var(--text1);margin-bottom:16px}
+.modal-actions{display:flex;gap:8px;margin-top:20px}
+.btn-cancel{flex:1;padding:11px;border-radius:9px;border:1.5px solid var(--border2);
+  background:#fff;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer}
+.btn-confirm{flex:1;padding:11px;border-radius:9px;border:none;
+  background:linear-gradient(135deg,#3B82F6,#1E4D8C);color:#fff;font-size:13px;font-weight:600;cursor:pointer}
+.modal-note{width:100%;padding:10px 12px;border-radius:9px;border:1.5px solid var(--border2);
+  font-size:13px;resize:vertical;min-height:72px;margin-bottom:0}
+.modal-note:focus{border-color:var(--accent);box-shadow:0 0 0 3px #3B82F615}
+
+/* ── TOAST ────────────────────────────────────────────────── */
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-80px);
+  background:#1E293B;color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:500;
+  z-index:999;transition:transform .25s ease;white-space:nowrap;box-shadow:var(--shadow-lg)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.success{background:#065F46}
+.toast.error{background:#991B1B}
+
+/* ── LOADER ───────────────────────────────────────────────── */
+.loader-overlay{position:fixed;inset:0;background:rgba(255,255,255,.7);display:flex;
+  align-items:center;justify-content:center;z-index:300;backdrop-filter:blur(2px)}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);
+  border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── REFRESH BTN ─────────────────────────────────────────── */
+.btn-refresh{padding:6px 12px;border-radius:8px;border:1.5px solid var(--border2);
+  background:#fff;cursor:pointer;font-size:11px;font-weight:600;color:var(--text2);
+  display:flex;align-items:center;gap:4px}
+.btn-refresh svg{width:13px;height:13px}
+
+/* ── PHOTO MODAL ─────────────────────────────────────────── */
+.photo-modal-img{width:100%;border-radius:10px;max-height:70vh;object-fit:contain}
+</style>
+</head>
+<body>
+
+<!-- ── CONFIG: ใส่ URL ของ Apps Script Web App ตรงนี้ ─── -->
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbyLY5WEZ4dzylpH1O5i8c88JEv0Sq_6q-xFc3uGGX_6je2DjRimWMrqP1ufgjtHYmdh/exec";
+// ^ วิธีได้ URL: Apps Script → Deploy → New deployment → Web app → Copy URL
+</script>
+
+<div id="app">
+
+<!-- ══ LOGIN PAGE ══════════════════════════════════════════ -->
+<div class="page active" id="page-login">
+<div class="login-wrap">
+<div class="login-box">
+  <div class="login-logo">
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+  </div>
+  <div class="login-title">WFH Attendance</div>
+  <div class="login-sub">ระบบลงชื่อปฏิบัติงานที่บ้าน</div>
+
+  <div class="tab-row">
+    <button class="tab-btn on" id="tab-login" onclick="switchTab('login')">เข้าสู่ระบบ</button>
+    <button class="tab-btn" id="tab-register" onclick="switchTab('register')">สมัครสมาชิก</button>
+  </div>
+
+  <!-- Login form -->
+  <div id="form-login">
+    <div class="field">
+      <label>รหัสพนักงาน</label>
+      <input type="text" id="li-empid" placeholder="เช่น 12345" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>รหัสผ่าน</label>
+      <input type="password" id="li-pass" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn-primary" onclick="doLogin()">เข้าสู่ระบบ</button>
+    <div id="li-err" class="err-msg" style="display:none"></div>
+  </div>
+
+  <!-- Register form -->
+  <div id="form-register" style="display:none">
+    <div class="field">
+      <label>รหัสพนักงาน</label>
+      <input type="text" id="rg-empid" placeholder="เช่น 12345">
+    </div>
+    <div class="field">
+      <label>ชื่อ-นามสกุล</label>
+      <input type="text" id="rg-name" placeholder="ชื่อเต็ม">
+    </div>
+    <div class="field">
+      <label>แผนก / หน่วยงาน</label>
+      <input type="text" id="rg-dept" placeholder="เช่น ฝอค.สนวก.">
+    </div>
+    <div class="field">
+      <label>รหัสผ่าน</label>
+      <input type="password" id="rg-pass" placeholder="อย่างน้อย 6 ตัวอักษร">
+    </div>
+    <button class="btn-primary" onclick="doRegister()">สมัครสมาชิก</button>
+    <div id="rg-err" class="err-msg" style="display:none"></div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ══ APP SHELL ═══════════════════════════════════════════ -->
+<div class="page" id="page-app">
+<div class="app-shell">
+
+  <!-- Sidebar (desktop) -->
+  <div class="sidebar">
+    <div class="sb-top">
+      <div class="sb-logo-row">
+        <div class="sb-logo"><svg viewBox="0 0 24 24" fill="white" width="15" height="15"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div>
+        <div class="sb-title">WFH Attendance</div>
+      </div>
+      <div class="sb-user">
+        <div class="sb-name" id="sb-name">-</div>
+        <div class="sb-empid" id="sb-empid">-</div>
+        <div class="sb-dept" id="sb-dept">-</div>
+      </div>
+    </div>
+    <div class="sb-nav">
+      <div class="sb-lbl">เมนู</div>
+      <button class="sb-item on" id="sb-home" onclick="showSection('home')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>หน้าหลัก
+      </button>
+      <button class="sb-item" id="sb-history" onclick="showSection('history')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>ประวัติ
+      </button>
+      <div id="sb-admin-menu" style="display:none">
+        <div class="sb-lbl" style="margin-top:8px">Admin</div>
+        <button class="sb-item" id="sb-today" onclick="showSection('today')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>วันนี้ (Real-time)
+        </button>
+        <button class="sb-item" id="sb-report" onclick="showSection('report')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>รายงาน
+        </button>
+      </div>
+    </div>
+    <div class="sb-bottom">
+      <button class="btn-logout-full" onclick="doLogout()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        ออกจากระบบ
+      </button>
+    </div>
+  </div>
+
+  <!-- Main area -->
+  <div class="main-area" style="flex:1;overflow-y:auto;display:flex;flex-direction:column">
+    <!-- Topbar (mobile) -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="tb-logo"><svg viewBox="0 0 24 24" fill="white" width="14" height="14"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div>
+        <div>
+          <div class="tb-title">WFH Attendance</div>
+          <div class="tb-user" id="tb-user">-</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <span class="tb-badge" id="tb-badge">User</span>
+        <button class="btn-logout" onclick="doLogout()">ออก</button>
+      </div>
+    </div>
+
+    <div class="main-content">
+
+      <!-- ── SECTION: HOME ────────────────────────────────── -->
+      <div id="section-home">
+        <div class="banner">
+          <div class="banner-date" id="home-date">-</div>
+          <div class="banner-name" id="home-name">สวัสดี</div>
+          <div class="banner-dept" id="home-dept"></div>
+          <div class="banner-status" id="home-status">
+            <span class="status-dot" id="home-dot"></span>
+            <span id="home-status-text">ยังไม่ได้เช็คอิน</span>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-body" style="text-align:center;padding:20px">
+            <div class="time-display" id="live-time">--:--:--</div>
+            <div class="date-display" id="live-date">-</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-header"><span class="card-title">บันทึกการทำงาน</span></div>
+          <div class="card-body">
+            <!-- Photo area -->
+            <div style="margin-bottom:10px">
+              <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">📷 รูปถ่าย (ไม่บังคับ)</div>
+              <div class="photo-area" id="photo-preview" onclick="triggerCamera()">
+                <div class="photo-placeholder">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  <span>แตะเพื่อถ่ายรูปหรือเลือกรูป</span>
+                </div>
+              </div>
+              <input type="file" id="camera-input" accept="image/*" capture="user" style="display:none" onchange="handlePhoto(this)">
+            </div>
+            <!-- GPS -->
+            <div class="gps-row">
+              <button class="btn-gps" onclick="getGPS()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+                GPS
+              </button>
+              <div id="gps-status" style="font-size:11px;color:var(--text3)">ยังไม่ได้รับ GPS</div>
+            </div>
+            <!-- Note -->
+            <div style="margin-bottom:14px">
+              <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">หมายเหตุ</div>
+              <textarea class="modal-note" id="home-note" placeholder="บันทึกเพิ่มเติม..." rows="2" style="width:100%"></textarea>
+            </div>
+            <!-- CI/CO buttons -->
+            <div class="ci-grid">
+              <button class="ci-btn checkin" id="btn-checkin" onclick="doCheckin()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                Check-in
+              </button>
+              <button class="ci-btn checkout" id="btn-checkout" onclick="doCheckout()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Check-out
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Today summary -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-val" id="stat-ci">--:--</div>
+            <div class="stat-lbl">เวลาเข้างาน</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val" id="stat-co">--:--</div>
+            <div class="stat-lbl">เวลาออกงาน</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SECTION: HISTORY ─────────────────────────────── -->
+      <div id="section-history" style="display:none">
+        <div class="section-title">ประวัติการทำงาน</div>
+        <div class="filter-row">
+          <select class="filter-select" id="hist-month" onchange="loadHistory()">
+            <option value="1">มกราคม</option><option value="2">กุมภาพันธ์</option>
+            <option value="3">มีนาคม</option><option value="4">เมษายน</option>
+            <option value="5">พฤษภาคม</option><option value="6">มิถุนายน</option>
+            <option value="7">กรกฎาคม</option><option value="8">สิงหาคม</option>
+            <option value="9">กันยายน</option><option value="10">ตุลาคม</option>
+            <option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
+          </select>
+          <select class="filter-select" id="hist-year" onchange="loadHistory()">
+          </select>
+        </div>
+        <div id="hist-list"></div>
+      </div>
+
+      <!-- ── SECTION: TODAY (Admin) ───────────────────────── -->
+      <div id="section-today" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div class="section-title" style="margin-bottom:0">สถานะวันนี้</div>
+          <button class="btn-refresh" onclick="loadToday()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+            รีเฟรช
+          </button>
+        </div>
+        <div class="admin-summary" id="today-summary"></div>
+        <div class="card">
+          <div class="card-header"><span class="card-title" id="today-title">รายการวันนี้</span></div>
+          <div style="overflow-x:auto">
+            <table class="admin-table">
+              <thead><tr>
+                <th>พนักงาน</th><th>แผนก</th><th>เช็คอิน</th><th>เช็คเอาท์</th><th>ชั่วโมง</th><th>สถานะ</th><th>รูป</th>
+              </tr></thead>
+              <tbody id="today-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SECTION: REPORT (Admin) ──────────────────────── -->
+      <div id="section-report" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div class="section-title" style="margin-bottom:0">รายงานรายเดือน</div>
+          <button class="btn-refresh" onclick="loadReport()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+            โหลดใหม่
+          </button>
+        </div>
+        <div class="filter-row">
+          <select class="filter-select" id="rpt-month">
+            <option value="1">มกราคม</option><option value="2">กุมภาพันธ์</option>
+            <option value="3">มีนาคม</option><option value="4">เมษายน</option>
+            <option value="5">พฤษภาคม</option><option value="6">มิถุนายน</option>
+            <option value="7">กรกฎาคม</option><option value="8">สิงหาคม</option>
+            <option value="9">กันยายน</option><option value="10">ตุลาคม</option>
+            <option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
+          </select>
+          <select class="filter-select" id="rpt-year"></select>
+          <button class="btn-refresh" onclick="loadReport()" style="background:var(--accent);color:#fff;border-color:var(--accent)">ดูรายงาน</button>
+        </div>
+        <div class="card">
+          <div style="overflow-x:auto">
+            <table class="admin-table">
+              <thead><tr>
+                <th>พนักงาน</th><th>แผนก</th><th>จำนวนวัน</th><th>รวมชั่วโมง</th><th>เฉลี่ย/วัน</th>
+              </tr></thead>
+              <tbody id="report-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /main-content -->
+  </div><!-- /main-area -->
+
+  <!-- Bottom nav (mobile) -->
+  <div class="bnav">
+    <button class="bnav-btn on" id="bn-home" onclick="showSection('home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>หน้าหลัก
+    </button>
+    <button class="bnav-btn" id="bn-history" onclick="showSection('history')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>ประวัติ
+    </button>
+    <button class="bnav-btn" id="bn-today" onclick="showSection('today')" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>วันนี้
+    </button>
+    <button class="bnav-btn" id="bn-report" onclick="showSection('report')" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>รายงาน
+    </button>
+  </div>
+
+</div>
+</div>
+<!-- /page-app -->
+
+</div><!-- /app -->
+
+<!-- ── GLOBAL COMPONENTS ─────────────────────────────────── -->
+<div class="toast" id="toast"></div>
+<div class="loader-overlay" id="loader" style="display:none"><div class="spinner"></div></div>
+
+<!-- Photo lightbox -->
+<div class="modal-overlay" id="photo-modal" style="display:none" onclick="closePhotoModal()">
+  <div class="modal-box" style="text-align:center" onclick="event.stopPropagation()">
+    <img id="photo-modal-img" class="photo-modal-img" src="">
+    <button class="btn-cancel" style="margin-top:14px;width:100%" onclick="closePhotoModal()">ปิด</button>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════════
+let state = {
+  token: null, user: null, todayRecord: null,
+  photoBase64: null, lat: null, lng: null,
+  pollTimer: null
+};
+
+// ════════════════════════════════════════════════════════════
+//  API
+// ════════════════════════════════════════════════════════════
+async function api(action, body = {}) {
+  if (!API_URL || API_URL.includes("YOUR_APPS")) {
+    throw new Error("กรุณาใส่ URL ของ Apps Script ใน index.html ก่อนใช้งาน");
+  }
+  const resp = await fetch(API_URL, {
+    method: "POST", redirect: "follow",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action, token: state.token, ...body })
+  });
+  return resp.json();
+}
+
+// ════════════════════════════════════════════════════════════
+//  AUTH
+// ════════════════════════════════════════════════════════════
+function switchTab(tab) {
+  document.getElementById("tab-login").classList.toggle("on", tab === "login");
+  document.getElementById("tab-register").classList.toggle("on", tab === "register");
+  document.getElementById("form-login").style.display   = tab === "login"    ? "block" : "none";
+  document.getElementById("form-register").style.display = tab === "register" ? "block" : "none";
+}
+
+async function doLogin() {
+  const emp_id   = document.getElementById("li-empid").value.trim();
+  const password = document.getElementById("li-pass").value;
+  const errEl    = document.getElementById("li-err");
+  errEl.style.display = "none";
+  if (!emp_id || !password) { showErr(errEl, "กรุณากรอกข้อมูลให้ครบ"); return; }
+  showLoader();
+  try {
+    const res = await api("login", { emp_id, password });
+    if (!res.ok) { showErr(errEl, res.msg); return; }
+    state.token       = res.token;
+    state.user        = res.user;
+    state.todayRecord = res.today;
+    saveSession();
+    enterApp();
+  } catch(e) { showErr(errEl, e.message); }
+  finally { hideLoader(); }
+}
+
+async function doRegister() {
+  const emp_id     = document.getElementById("rg-empid").value.trim();
+  const name       = document.getElementById("rg-name").value.trim();
+  const department = document.getElementById("rg-dept").value.trim();
+  const password   = document.getElementById("rg-pass").value;
+  const errEl      = document.getElementById("rg-err");
+  errEl.style.display = "none";
+  if (!emp_id || !name || !password) { showErr(errEl, "กรุณากรอกข้อมูลให้ครบ"); return; }
+  if (password.length < 6) { showErr(errEl, "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร"); return; }
+  showLoader();
+  try {
+    const res = await api("register", { emp_id, name, department, password });
+    if (!res.ok) { showErr(errEl, res.msg); return; }
+    showToast(res.msg, "success");
+    switchTab("login");
+    document.getElementById("li-empid").value = emp_id;
+  } catch(e) { showErr(errEl, e.message); }
+  finally { hideLoader(); }
+}
+
+async function doLogout() {
+  showLoader();
+  try { await api("logout"); } catch(e) {}
+  clearSession();
+  hideLoader();
+  showPage("login");
+  if (state.pollTimer) { clearInterval(state.pollTimer); state.pollTimer = null; }
+  state = { token: null, user: null, todayRecord: null, photoBase64: null, lat: null, lng: null, pollTimer: null };
+}
+
+// ════════════════════════════════════════════════════════════
+//  SESSION PERSISTENCE
+// ════════════════════════════════════════════════════════════
+function saveSession() {
+  sessionStorage.setItem("wfh_token", state.token);
+  sessionStorage.setItem("wfh_user",  JSON.stringify(state.user));
+}
+function clearSession() {
+  sessionStorage.removeItem("wfh_token");
+  sessionStorage.removeItem("wfh_user");
+}
+function restoreSession() {
+  const token = sessionStorage.getItem("wfh_token");
+  const user  = sessionStorage.getItem("wfh_user");
+  if (token && user) {
+    state.token = token;
+    state.user  = JSON.parse(user);
+    return true;
+  }
+  return false;
+}
+
+// ════════════════════════════════════════════════════════════
+//  APP INIT
+// ════════════════════════════════════════════════════════════
+function enterApp() {
+  const u = state.user;
+  // Sidebar
+  document.getElementById("sb-name").textContent  = u.name;
+  document.getElementById("sb-empid").textContent = u.emp_id;
+  document.getElementById("sb-dept").textContent  = u.department || "";
+  // Topbar
+  document.getElementById("tb-user").textContent  = u.name;
+  document.getElementById("tb-badge").textContent = u.role === "admin" ? "Admin" : "User";
+  document.getElementById("tb-badge").className   = "tb-badge" + (u.role === "admin" ? " admin" : "");
+  // Admin menus
+  const isAdmin = u.role === "admin";
+  document.getElementById("sb-admin-menu").style.display = isAdmin ? "block" : "none";
+  document.getElementById("bn-today").style.display      = isAdmin ? "flex"  : "none";
+  document.getElementById("bn-report").style.display     = isAdmin ? "flex"  : "none";
+  // Banner
+  document.getElementById("home-name").textContent = "สวัสดี, " + u.name;
+  document.getElementById("home-dept").textContent = u.department || "";
+  updateHomeBanner();
+  showPage("app");
+  showSection("home");
+  startClock();
+  // Init year dropdowns
+  initYearDropdowns();
+  // If admin, start auto-refresh for today
+  if (isAdmin) startAdminPoll();
+}
+
+function updateHomeBanner() {
+  const tr = state.todayRecord;
+  const dot  = document.getElementById("home-dot");
+  const txt  = document.getElementById("home-status-text");
+  const ciBtn = document.getElementById("btn-checkin");
+  const coBtn = document.getElementById("btn-checkout");
+  const statCi = document.getElementById("stat-ci");
+  const statCo = document.getElementById("stat-co");
+  if (!tr) {
+    dot.className = "status-dot"; txt.textContent = "ยังไม่ได้เช็คอิน";
+    ciBtn.disabled = false; coBtn.disabled = true;
+    statCi.textContent = "--:--"; statCo.textContent = "--:--";
+  } else if (tr.checkin_time && !tr.checkout_time) {
+    dot.className = "status-dot in"; txt.textContent = "กำลังทำงาน WFH";
+    ciBtn.disabled = true; coBtn.disabled = false;
+    statCi.textContent = tr.checkin_time.slice(0,5); statCo.textContent = "--:--";
+  } else {
+    dot.className = "status-dot done"; txt.textContent = "เสร็จสิ้นวันนี้";
+    ciBtn.disabled = true; coBtn.disabled = true;
+    statCi.textContent = tr.checkin_time.slice(0,5);
+    statCo.textContent = tr.checkout_time ? tr.checkout_time.slice(0,5) : "--:--";
+  }
+}
+
+function initYearDropdowns() {
+  const now = new Date();
+  const y   = now.getFullYear();
+  ["hist-year","rpt-year"].forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = "";
+    for (let i = y; i >= y - 2; i--) {
+      sel.appendChild(new Option(i, i, i === y, i === y));
+    }
+  });
+  // Set current month
+  document.getElementById("hist-month").value = now.getMonth() + 1;
+  document.getElementById("rpt-month").value  = now.getMonth() + 1;
+}
+
+// ════════════════════════════════════════════════════════════
+//  CLOCK
+// ════════════════════════════════════════════════════════════
+function startClock() {
+  function tick() {
+    const now  = new Date();
+    const th   = now.toLocaleTimeString("th-TH", { hour12: false });
+    const date = now.toLocaleDateString("th-TH", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
+    document.getElementById("live-time").textContent = th;
+    document.getElementById("live-date").textContent = date;
+    document.getElementById("home-date").textContent = date;
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+// ════════════════════════════════════════════════════════════
+//  CHECKIN / CHECKOUT
+// ════════════════════════════════════════════════════════════
+async function doCheckin() {
+  showLoader();
+  try {
+    const res = await api("checkin", {
+      photo_base64: state.photoBase64 || null,
+      lat: state.lat, lng: state.lng,
+      note: document.getElementById("home-note").value.trim()
+    });
+    if (!res.ok) { showToast(res.msg, "error"); return; }
+    state.todayRecord = { checkin_time: res.checkin_time, checkout_time: null };
+    updateHomeBanner();
+    showToast("✅ " + res.msg, "success");
+    resetPhoto();
+    document.getElementById("home-note").value = "";
+  } catch(e) { showToast(e.message, "error"); }
+  finally { hideLoader(); }
+}
+
+async function doCheckout() {
+  showLoader();
+  try {
+    const res = await api("checkout", {
+      photo_base64: state.photoBase64 || null,
+      lat: state.lat, lng: state.lng,
+      note: document.getElementById("home-note").value.trim()
+    });
+    if (!res.ok) { showToast(res.msg, "error"); return; }
+    state.todayRecord.checkout_time = res.checkout_time;
+    state.todayRecord.work_hours    = res.work_hours;
+    updateHomeBanner();
+    showToast(`✅ ${res.msg} (${res.work_hours} ชม.)`, "success");
+    resetPhoto();
+    document.getElementById("home-note").value = "";
+  } catch(e) { showToast(e.message, "error"); }
+  finally { hideLoader(); }
+}
+
+// ════════════════════════════════════════════════════════════
+//  PHOTO
+// ════════════════════════════════════════════════════════════
+function triggerCamera() { document.getElementById("camera-input").click(); }
+function handlePhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    state.photoBase64 = e.target.result;
+    const prev = document.getElementById("photo-preview");
+    prev.innerHTML = `<img src="${e.target.result}" style="width:100%;max-height:180px;object-fit:cover">`;
+  };
+  reader.readAsDataURL(file);
+}
+function resetPhoto() {
+  state.photoBase64 = null;
+  document.getElementById("camera-input").value = "";
+  document.getElementById("photo-preview").innerHTML = `<div class="photo-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><span>แตะเพื่อถ่ายรูปหรือเลือกรูป</span></div>`;
+}
+
+// ════════════════════════════════════════════════════════════
+//  GPS
+// ════════════════════════════════════════════════════════════
+function getGPS() {
+  const el = document.getElementById("gps-status");
+  el.textContent = "กำลังรับ GPS...";
+  if (!navigator.geolocation) { el.textContent = "Browser ไม่รองรับ GPS"; return; }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      state.lat = pos.coords.latitude.toFixed(6);
+      state.lng = pos.coords.longitude.toFixed(6);
+      document.getElementById("gps-status").innerHTML =
+        `<span style="color:#10B981;font-weight:600">📍 ${state.lat}, ${state.lng}</span>`;
+    },
+    err => { el.textContent = "ไม่สามารถรับ GPS ได้"; }
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+//  HISTORY
+// ════════════════════════════════════════════════════════════
+async function loadHistory() {
+  const month = document.getElementById("hist-month").value;
+  const year  = document.getElementById("hist-year").value;
+  const el    = document.getElementById("hist-list");
+  el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text3)">กำลังโหลด...</div>';
+  try {
+    const res = await api("getMyData", { month, year });
+    if (!res.ok) { el.innerHTML = `<div class="empty-state">${res.msg}</div>`; return; }
+    if (!res.records.length) {
+      el.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>ไม่มีข้อมูลในเดือนนี้</div>`;
+      return;
+    }
+    el.innerHTML = res.records.map(r => {
+      const statusBadge = r.status === "completed"
+        ? '<span class="badge badge-green">เสร็จสิ้น</span>'
+        : r.status === "checked_in"
+          ? '<span class="badge badge-blue">กำลังทำงาน</span>'
+          : '<span class="badge badge-gray">-</span>';
+      return `
+      <div class="hist-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div class="hist-date">${formatThaiDate(r.date)}</div>
+          ${statusBadge}
+        </div>
+        <div class="hist-row"><span class="hist-label">เช็คอิน</span><span class="hist-val">${r.checkin_time ? r.checkin_time.slice(0,5) : '--:--'}</span></div>
+        <div class="hist-row"><span class="hist-label">เช็คเอาท์</span><span class="hist-val">${r.checkout_time ? r.checkout_time.slice(0,5) : '--:--'}</span></div>
+        ${r.work_hours ? `<div class="hist-row"><span class="hist-label">รวมชั่วโมง</span><span class="hist-hours">${r.work_hours} ชม.</span></div>` : ""}
+        ${r.note ? `<div style="margin-top:8px;font-size:11px;color:var(--text2);padding:7px 10px;background:#F8FAFC;border-radius:7px">${r.note}</div>` : ""}
+        ${r.checkin_photo ? `<div style="margin-top:8px"><img class="photo-thumb" src="${r.checkin_photo}" onclick="openPhotoModal('${r.checkin_photo}')" title="รูปเช็คอิน"></div>` : ""}
+      </div>`;
+    }).join("");
+  } catch(e) { el.innerHTML = `<div class="empty-state">${e.message}</div>`; }
+}
+
+// ════════════════════════════════════════════════════════════
+//  ADMIN: TODAY
+// ════════════════════════════════════════════════════════════
+async function loadToday() {
+  try {
+    const res = await api("getStatus");
+    if (!res.ok) return;
+    const s = res.summary;
+    document.getElementById("today-summary").innerHTML = `
+      <div class="sum-card navy"><div class="sum-num">${s.total}</div><div class="sum-lbl">พนักงานทั้งหมด</div></div>
+      <div class="sum-card green"><div class="sum-num">${s.checked_in}</div><div class="sum-lbl">กำลังทำงาน</div></div>
+      <div class="sum-card blue"><div class="sum-num">${s.completed}</div><div class="sum-lbl">เสร็จสิ้น</div></div>
+      <div class="sum-card amber"><div class="sum-num">${s.not_yet}</div><div class="sum-lbl">ยังไม่เช็คอิน</div></div>
+    `;
+    document.getElementById("today-title").textContent = `รายการวันที่ ${res.date}`;
+    document.getElementById("today-tbody").innerHTML = res.records.map(r => `
+      <tr>
+        <td><div style="display:flex;align-items:center;gap:8px">
+          <div class="avatar">${(r.name||"?")[0]}</div>
+          <div><div style="font-weight:600;font-size:12px">${r.name}</div>
+          <div style="font-size:10px;color:var(--text3)">${r.emp_id||""}</div></div>
+        </div></td>
+        <td style="color:var(--text2)">${r.department||"-"}</td>
+        <td><span class="hist-val">${r.checkin_time ? r.checkin_time.slice(0,5) : '-'}</span></td>
+        <td><span class="hist-val">${r.checkout_time ? r.checkout_time.slice(0,5) : '-'}</span></td>
+        <td class="hist-hours">${r.work_hours || '-'}</td>
+        <td>${r.status === 'completed' ? '<span class="badge badge-green">เสร็จ</span>' : r.status === 'checked_in' ? '<span class="badge badge-blue">ทำงาน</span>' : '<span class="badge badge-gray">-</span>'}</td>
+        <td>${r.checkin_photo ? `<img class="photo-thumb" src="${r.checkin_photo}" onclick="openPhotoModal('${r.checkin_photo}')">` : '-'}</td>
+      </tr>`).join("") || '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">ยังไม่มีการเช็คอินวันนี้</td></tr>';
+  } catch(e) {}
+}
+
+function startAdminPoll() {
+  if (state.pollTimer) clearInterval(state.pollTimer);
+  state.pollTimer = setInterval(() => {
+    if (document.getElementById("section-today").style.display !== "none") loadToday();
+  }, 30000); // 30 วิ
+}
+
+// ════════════════════════════════════════════════════════════
+//  ADMIN: REPORT
+// ════════════════════════════════════════════════════════════
+async function loadReport() {
+  const month = document.getElementById("rpt-month").value;
+  const year  = document.getElementById("rpt-year").value;
+  const tbody = document.getElementById("report-tbody");
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text3)">กำลังโหลด...</td></tr>';
+  try {
+    const res = await api("getSummary", { month, year });
+    if (!res.ok) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--red)">${res.msg}</td></tr>`; return; }
+    if (!res.summary.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text3)">ไม่มีข้อมูล</td></tr>';
+      return;
+    }
+    tbody.innerHTML = res.summary.map(s => `
+      <tr>
+        <td><div style="display:flex;align-items:center;gap:8px">
+          <div class="avatar">${(s.name||"?")[0]}</div>
+          <div><div style="font-weight:600;font-size:12px">${s.name}</div>
+          <div style="font-size:10px;color:var(--text3)">${s.emp_id}</div></div>
+        </div></td>
+        <td style="color:var(--text2)">${s.department||"-"}</td>
+        <td style="font-family:'JetBrains Mono',monospace;font-weight:600">${s.days} วัน</td>
+        <td style="font-family:'JetBrains Mono',monospace;color:var(--accent);font-weight:600">${s.total_hours} ชม.</td>
+        <td style="font-family:'JetBrains Mono',monospace;color:var(--text2)">${s.avg_hours} ชม.</td>
+      </tr>`).join("");
+  } catch(e) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--red)">${e.message}</td></tr>`; }
+}
+
+// ════════════════════════════════════════════════════════════
+//  NAVIGATION
+// ════════════════════════════════════════════════════════════
+const SECTIONS = ["home","history","today","report"];
+function showSection(name) {
+  SECTIONS.forEach(s => {
+    document.getElementById("section-" + s).style.display = s === name ? "block" : "none";
+    // sidebar
+    const sbEl = document.getElementById("sb-" + s);
+    if (sbEl) sbEl.classList.toggle("on", s === name);
+    // bottom nav
+    const bnEl = document.getElementById("bn-" + s);
+    if (bnEl) bnEl.classList.toggle("on", s === name);
+  });
+  if (name === "history") loadHistory();
+  if (name === "today")   loadToday();
+  if (name === "report")  {} // manual load via button
+}
+function showPage(name) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.getElementById("page-" + name).classList.add("active");
+}
+
+// ════════════════════════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════════════════════════
+let toastTimer;
+function showToast(msg, type = "") {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.className   = "toast show " + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 3000);
+}
+function showErr(el, msg) { el.textContent = msg; el.style.display = "block"; }
+function showLoader() { document.getElementById("loader").style.display = "flex"; }
+function hideLoader() { document.getElementById("loader").style.display = "none"; }
+function openPhotoModal(src) {
+  document.getElementById("photo-modal-img").src = src;
+  document.getElementById("photo-modal").style.display = "flex";
+}
+function closePhotoModal() { document.getElementById("photo-modal").style.display = "none"; }
+function formatThaiDate(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("th-TH", { weekday:"short", year:"numeric", month:"short", day:"numeric" });
+}
+
+// ════════════════════════════════════════════════════════════
+//  BOOTSTRAP
+// ════════════════════════════════════════════════════════════
+window.addEventListener("DOMContentLoaded", async () => {
+  if (restoreSession()) {
+    showLoader();
+    try {
+      // Verify session still valid + get today's record
+      const res = await api("getMyData", {});
+      if (res.ok) {
+        // Session good — reconstruct today
+        const today = new Date().toISOString().slice(0,10);
+        const tr    = (res.records || []).find(r => r.date === today) || null;
+        state.todayRecord = tr ? {
+          checkin_time:  tr.checkin_time,
+          checkout_time: tr.checkout_time,
+          work_hours:    tr.work_hours
+        } : null;
+        enterApp();
+      } else {
+        clearSession();
+        showPage("login");
+      }
+    } catch(e) { clearSession(); showPage("login"); }
+    finally { hideLoader(); }
+  }
+});
+</script>
+</body>
+</html>
