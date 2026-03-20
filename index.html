@@ -552,7 +552,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbwbI1hpDnZ_rl78zJEFKPUa
           <div style="overflow-x:auto">
             <table class="admin-table">
               <thead><tr>
-                <th>พนักงาน</th><th>แผนก</th><th>เช็คอิน</th><th>เช็คเอาท์</th><th>ชั่วโมง</th><th>สถานะ</th><th>รูป</th>
+                <th>Employee</th><th>Department</th><th>Check-in</th><th>Check-out</th><th>Hours</th><th>Status</th><th>Photo</th>
               </tr></thead>
               <tbody id="today-tbody"></tbody>
             </table>
@@ -1069,17 +1069,22 @@ async function loadHistory() {
         : r.status === "checked_in"
           ? '<span class="badge badge-blue">กำลังทำงาน</span>'
           : '<span class="badge badge-gray">-</span>';
+      const ciPhotoUrl = r.checkin_photo ? r.checkin_photo.replace('uc?id=','thumbnail?id=').replace('&export=download','') : '';
+      const coPhotoUrl = r.checkout_photo ? r.checkout_photo.replace('uc?id=','thumbnail?id=').replace('&export=download','') : '';
       return `
       <div class="hist-card">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div class="hist-date">${formatThaiDate(r.date)}</div>
           ${statusBadge}
         </div>
-        <div class="hist-row"><span class="hist-label">เช็คอิน</span><span class="hist-val">${r.checkin_time ? r.checkin_time.slice(0,5) : '--:--'}</span></div>
-        <div class="hist-row"><span class="hist-label">เช็คเอาท์</span><span class="hist-val">${r.checkout_time ? r.checkout_time.slice(0,5) : '--:--'}</span></div>
-        ${r.work_hours ? `<div class="hist-row"><span class="hist-label">รวมชั่วโมง</span><span class="hist-hours">${r.work_hours} ชม.</span></div>` : ""}
+        <div class="hist-row"><span class="hist-label">Check-in</span><span class="hist-val">${formatTime(r.checkin_time)}</span></div>
+        <div class="hist-row"><span class="hist-label">Check-out</span><span class="hist-val">${formatTime(r.checkout_time)}</span></div>
+        ${r.work_hours ? `<div class="hist-row"><span class="hist-label">Work hours</span><span class="hist-hours">${r.work_hours} hrs.</span></div>` : ""}
         ${r.note ? `<div style="margin-top:8px;font-size:11px;color:var(--text2);padding:7px 10px;background:#F8FAFC;border-radius:7px">${r.note}</div>` : ""}
-        ${r.checkin_photo ? `<div style="margin-top:8px"><img class="photo-thumb" src="${r.checkin_photo}" onclick="openPhotoModal('${r.checkin_photo}')" title="รูปเช็คอิน"></div>` : ""}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+          ${ciPhotoUrl ? `<div><div style="font-size:9px;font-weight:700;color:#065F46;background:#D1FAE5;padding:2px 6px;border-radius:8px;display:inline-block;margin-bottom:4px">Check-in</div><img class="photo-thumb" src="${ciPhotoUrl}" style="width:100%;height:80px;object-fit:cover;border-radius:8px" onerror="this.parentElement.innerHTML='<div style=\'font-size:10px;color:var(--text3)\'>รูปไม่สามารถแสดงได้</div>'" onclick="openPhotoModal('${r.checkin_photo}')"></div>` : ""}
+          ${coPhotoUrl ? `<div><div style="font-size:9px;font-weight:700;color:#1E40AF;background:#DBEAFE;padding:2px 6px;border-radius:8px;display:inline-block;margin-bottom:4px">Check-out</div><img class="photo-thumb" src="${coPhotoUrl}" style="width:100%;height:80px;object-fit:cover;border-radius:8px" onerror="this.parentElement.innerHTML='<div style=\'font-size:10px;color:var(--text3)\'>รูปไม่สามารถแสดงได้</div>'" onclick="openPhotoModal('${r.checkout_photo}')"></div>` : ""}
+        </div>
       </div>`;
     }).join("");
   } catch(e) { el.innerHTML = `<div class="empty-state">${e.message}</div>`; }
@@ -1108,8 +1113,8 @@ async function loadToday() {
           <div style="font-size:10px;color:var(--text3)">${r.emp_id||""}</div></div>
         </div></td>
         <td style="color:var(--text2)">${r.department||"-"}</td>
-        <td><span class="hist-val">${r.checkin_time ? r.checkin_time.slice(0,5) : '-'}</span></td>
-        <td><span class="hist-val">${r.checkout_time ? r.checkout_time.slice(0,5) : '-'}</span></td>
+        <td><span class="hist-val">${formatTime(r.checkin_time)}</span></td>
+        <td><span class="hist-val">${formatTime(r.checkout_time) !== '--:--' ? formatTime(r.checkout_time) : '-'}</span></td>
         <td class="hist-hours">${r.work_hours || '-'}</td>
         <td>${r.status === 'completed' ? '<span class="badge badge-green">เสร็จ</span>' : r.status === 'checked_in' ? '<span class="badge badge-blue">ทำงาน</span>' : '<span class="badge badge-gray">-</span>'}</td>
         <td>${r.checkin_photo ? `<img class="photo-thumb" src="${r.checkin_photo}" onclick="openPhotoModal('${r.checkin_photo}')">` : '-'}</td>
@@ -1200,6 +1205,28 @@ function closePhotoModal() { document.getElementById("photo-modal").style.displa
 function formatThaiDate(dateStr) {
   const d = new Date(dateStr);
   return d.toLocaleDateString("th-TH", { weekday:"short", year:"numeric", month:"short", day:"numeric" });
+}
+
+function formatTime(timeStr) {
+  if (!timeStr) return "--:--";
+  const s = String(timeStr);
+  // Handle "1899-..." or Date-like strings from Sheets
+  if (s.includes("1899") || s.includes("T") || s.includes("/")) {
+    try {
+      const d = new Date(s);
+      if (!isNaN(d)) {
+        const h = String(d.getHours()).padStart(2,"0");
+        const m = String(d.getMinutes()).padStart(2,"0");
+        return h + ":" + m;
+      }
+    } catch(e) {}
+  }
+  // Already HH:mm:ss or HH:mm format
+  const parts = s.split(":");
+  if (parts.length >= 2) {
+    return parts[0].padStart(2,"0") + ":" + parts[1].padStart(2,"0");
+  }
+  return s;
 }
 
 // ════════════════════════════════════════════════════════════
