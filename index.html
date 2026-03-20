@@ -783,7 +783,7 @@ async function doLogout() {
   hideLoader();
   showPage("login");
   if (state.pollTimer) { clearInterval(state.pollTimer); state.pollTimer = null; }
-  state = { token: null, user: null, todayRecord: null, photoBase64: null, checkinPhoto: null, checkoutPhoto: null, lat: null, lng: null, pollTimer: null, workType: 'WFH' };
+  state = { token: null, user: null, todayRecord: null, photoBase64: null, checkinPhoto: null, checkoutPhoto: null, lat: null, lng: null, locationName: '', pollTimer: null, workType: 'WFH' };
 }
 
 // ════════════════════════════════════════════════════════════
@@ -929,6 +929,7 @@ async function doCheckin() {
     const res = await api("checkin", {
       photo_base64: state.photoBase64 || null,
       lat: state.lat, lng: state.lng,
+      location_name: state.locationName || "",
       note: document.getElementById("home-note").value.trim(),
       work_type: state.workType || "WFH"
     });
@@ -1106,7 +1107,8 @@ function initGPS() {
         const el = document.getElementById("gps-status");
         el.style.borderColor = "#10B981";
         el.style.background  = "#F0FDF4";
-        document.getElementById("gps-text").innerHTML = `<span style="color:#166534;font-weight:600">✓ ${place || (state.lat+", "+state.lng)}</span>`;
+        state.locationName = place || (state.lat+", "+state.lng);
+        document.getElementById("gps-text").innerHTML = `<span style="color:#166534;font-weight:600">✓ ${state.locationName}</span>`;
       } catch(e) {
         document.getElementById("gps-text").innerHTML = `<span style="color:#166534;font-weight:600">✓ ${state.lat}, ${state.lng}</span>`;
       }
