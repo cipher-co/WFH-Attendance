@@ -743,16 +743,16 @@ async function doLogout() {
 //  SESSION PERSISTENCE
 // ════════════════════════════════════════════════════════════
 function saveSession() {
-  sessionStorage.setItem("wfh_token", state.token);
-  sessionStorage.setItem("wfh_user",  JSON.stringify(state.user));
+  localStorage.setItem("wfh_token", state.token);
+  localStorage.setItem("wfh_user", JSON.stringify(state.user));
 }
 function clearSession() {
-  sessionStorage.removeItem("wfh_token");
-  sessionStorage.removeItem("wfh_user");
+  localStorage.removeItem("wfh_token");
+  localStorage.removeItem("wfh_user");
 }
 function restoreSession() {
-  const token = sessionStorage.getItem("wfh_token");
-  const user  = sessionStorage.getItem("wfh_user");
+  const token = localStorage.getItem("wfh_token");
+  const user  = localStorage.getItem("wfh_user");
   if (token && user) {
     state.token = token;
     state.user  = JSON.parse(user);
@@ -811,7 +811,7 @@ function updateHomeBanner() {
   const coBtn = document.getElementById("btn-checkout");
   const statCi = document.getElementById("stat-ci");
   const statCo = document.getElementById("stat-co");
-  if (!tr) {
+  if (!tr || !tr.checkin_time) {
     dot.className = "status-dot"; txt.textContent = "ยังไม่ได้เช็คอิน";
     ciBtn.disabled = false; coBtn.disabled = true;
     statCi.textContent = "--:--"; statCo.textContent = "--:--";
@@ -871,9 +871,14 @@ async function doCheckin() {
       lat: state.lat, lng: state.lng,
       note: document.getElementById("home-note").value.trim()
     });
-    if (!res.ok) { showToast(res.msg, "error"); return; }
-    state.todayRecord = { checkin_time: res.checkin_time, checkout_time: null };
+    if (!res.ok) { 
+      showToast("❌ " + res.msg, "error"); 
+      if (res.msg && res.msg.includes("Session")) { doLogout(); }
+      return; 
+    }
+    state.todayRecord = { checkin_time: res.checkin_time, checkout_time: null, record_id: res.record_id };
     state.checkinPhoto = state.photoBase64;
+    saveSession();
     updateHomeBanner();
     showPhotoProof();
     showToast("✅ " + res.msg, "success");
@@ -893,7 +898,12 @@ async function doCheckout() {
       lat: state.lat, lng: state.lng,
       note: document.getElementById("home-note").value.trim()
     });
-    if (!res.ok) { showToast(res.msg, "error"); return; }
+    if (!res.ok) { 
+      showToast("❌ " + res.msg, "error"); 
+      // If session expired, redirect to login
+      if (res.msg && res.msg.includes("Session")) { doLogout(); }
+      return; 
+    }
     state.todayRecord.checkout_time = res.checkout_time;
     state.todayRecord.work_hours    = res.work_hours;
     state.checkoutPhoto = state.photoBase64;
