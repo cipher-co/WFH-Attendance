@@ -650,7 +650,11 @@ const API_URL = "https://script.google.com/macros/s/AKfycbwbI1hpDnZ_rl78zJEFKPUa
 <!-- Photo lightbox -->
 <div class="modal-overlay" id="photo-modal" style="display:none" onclick="closePhotoModal()">
   <div class="modal-box" style="text-align:center" onclick="event.stopPropagation()">
-    <img id="photo-modal-img" class="photo-modal-img" src="">
+    <img id="photo-modal-img" class="photo-modal-img" src="" onerror="this.style.display='none';document.getElementById('photo-modal-fallback').style.display='block'">
+    <div id="photo-modal-fallback" style="display:none;padding:20px">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:12px">ไม่สามารถแสดงรูปในหน้านี้ได้</div>
+      <a id="photo-modal-link" href="#" target="_blank" style="padding:10px 20px;background:var(--accent);color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none">เปิดรูปในแท็บใหม่</a>
+    </div>
     <button class="btn-cancel" style="margin-top:14px;width:100%" onclick="closePhotoModal()">ปิด</button>
   </div>
 </div>
@@ -1069,8 +1073,8 @@ async function loadHistory() {
         : r.status === "checked_in"
           ? '<span class="badge badge-blue">กำลังทำงาน</span>'
           : '<span class="badge badge-gray">-</span>';
-      const ciPhotoUrl = r.checkin_photo ? r.checkin_photo.replace('uc?id=','thumbnail?id=').replace('&export=download','') : '';
-      const coPhotoUrl = r.checkout_photo ? r.checkout_photo.replace('uc?id=','thumbnail?id=').replace('&export=download','') : '';
+      const ciPhotoUrl = r.checkin_photo ? r.checkin_photo.replace('&export=download','') + '&export=view' : '';
+      const coPhotoUrl = r.checkout_photo ? r.checkout_photo.replace('&export=download','') + '&export=view' : '';
       return `
       <div class="hist-card">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
@@ -1198,7 +1202,13 @@ function showErr(el, msg) { el.textContent = msg; el.style.display = "block"; }
 function showLoader() { document.getElementById("loader").style.display = "flex"; }
 function hideLoader() { document.getElementById("loader").style.display = "none"; }
 function openPhotoModal(src) {
-  document.getElementById("photo-modal-img").src = src;
+  const viewUrl = src.replace("&export=download","") + "&export=view";
+  const img = document.getElementById("photo-modal-img");
+  const fb  = document.getElementById("photo-modal-fallback");
+  img.style.display = "block";
+  fb.style.display  = "none";
+  img.src = viewUrl;
+  document.getElementById("photo-modal-link").href = viewUrl;
   document.getElementById("photo-modal").style.display = "flex";
 }
 function closePhotoModal() { document.getElementById("photo-modal").style.display = "none"; }
