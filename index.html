@@ -488,6 +488,35 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyT6YOMtSprTXDD4YHXjUOu
             <div class="stat-lbl">เวลาออกงาน</div>
           </div>
         </div>
+
+        <!-- Photo proof section -->
+        <div id="photo-proof" style="display:none;margin-bottom:14px">
+          <div class="card">
+            <div class="card-header"><span class="card-title">หลักฐานรูปถ่าย</span></div>
+            <div class="card-body">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div>
+                  <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px;display:flex;align-items:center;gap:4px">
+                    <span style="background:#10B981;color:#fff;padding:2px 7px;border-radius:10px;font-size:9px">Check-in</span>
+                  </div>
+                  <div id="proof-ci-wrap" style="border-radius:10px;overflow:hidden;border:1px solid var(--border);min-height:80px;display:flex;align-items:center;justify-content:center;background:#F8FAFC">
+                    <span style="font-size:11px;color:var(--text3)">ยังไม่ได้ถ่าย</span>
+                  </div>
+                  <div id="proof-ci-time" style="font-size:10px;color:var(--text2);margin-top:4px;text-align:center"></div>
+                </div>
+                <div>
+                  <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px;display:flex;align-items:center;gap:4px">
+                    <span style="background:#3B82F6;color:#fff;padding:2px 7px;border-radius:10px;font-size:9px">Check-out</span>
+                  </div>
+                  <div id="proof-co-wrap" style="border-radius:10px;overflow:hidden;border:1px solid var(--border);min-height:80px;display:flex;align-items:center;justify-content:center;background:#F8FAFC">
+                    <span style="font-size:11px;color:var(--text3)">ยังไม่ได้ถ่าย</span>
+                  </div>
+                  <div id="proof-co-time" style="font-size:10px;color:var(--text2);margin-top:4px;text-align:center"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- ── SECTION: HISTORY ─────────────────────────────── -->
@@ -707,7 +736,7 @@ async function doLogout() {
   hideLoader();
   showPage("login");
   if (state.pollTimer) { clearInterval(state.pollTimer); state.pollTimer = null; }
-  state = { token: null, user: null, todayRecord: null, photoBase64: null, lat: null, lng: null, pollTimer: null };
+  state = { token: null, user: null, todayRecord: null, photoBase64: null, checkinPhoto: null, checkoutPhoto: null, lat: null, lng: null, pollTimer: null };
 }
 
 // ════════════════════════════════════════════════════════════
@@ -754,6 +783,17 @@ function enterApp() {
   document.getElementById("home-name").textContent = "สวัสดี, " + u.name;
   document.getElementById("home-dept").textContent = u.department || "";
   updateHomeBanner();
+  // Restore photo proof display if already checked in today
+  if (state.todayRecord && state.todayRecord.checkin_time) {
+    document.getElementById("photo-proof").style.display = "block";
+    const ciWrap = document.getElementById("proof-ci-wrap");
+    const ciTime = document.getElementById("proof-ci-time");
+    ciWrap.innerHTML = `<div style="padding:16px;text-align:center;color:var(--text3);font-size:11px">✓ Check-in ${state.todayRecord.checkin_time.slice(0,5)}<br>รูปถ่ายบันทึกแล้ว</div>`;
+    ciTime.textContent = "";
+    if (state.todayRecord.checkout_time) {
+      document.getElementById("proof-co-wrap").innerHTML = `<div style="padding:16px;text-align:center;color:var(--text3);font-size:11px">✓ Check-out ${state.todayRecord.checkout_time.slice(0,5)}<br>รูปถ่ายบันทึกแล้ว</div>`;
+    }
+  }
   showPage("app");
   showSection("home");
   startClock();
@@ -833,7 +873,9 @@ async function doCheckin() {
     });
     if (!res.ok) { showToast(res.msg, "error"); return; }
     state.todayRecord = { checkin_time: res.checkin_time, checkout_time: null };
+    state.checkinPhoto = state.photoBase64;
     updateHomeBanner();
+    showPhotoProof();
     showToast("✅ " + res.msg, "success");
     resetPhoto();
     document.getElementById("home-note").value = "";
@@ -854,7 +896,9 @@ async function doCheckout() {
     if (!res.ok) { showToast(res.msg, "error"); return; }
     state.todayRecord.checkout_time = res.checkout_time;
     state.todayRecord.work_hours    = res.work_hours;
+    state.checkoutPhoto = state.photoBase64;
     updateHomeBanner();
+    showPhotoProof();
     showToast(`✅ ${res.msg} (${res.work_hours} ชม.)`, "success");
     resetPhoto();
     document.getElementById("home-note").value = "";
@@ -937,6 +981,22 @@ function resetPhoto() {
   prev.style.border = "";
   prev.style.position = "";
   prev.innerHTML = `<div class="photo-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><span style="font-weight:600;color:#EF4444">แตะเพื่อเปิดกล้องถ่ายรูป</span><span style="font-size:10px;color:var(--text3)">ไม่สามารถเลือกรูปจาก gallery ได้</span></div>`;
+}
+
+function showPhotoProof() {
+  const tr = state.todayRecord;
+  if (!tr) return;
+  document.getElementById("photo-proof").style.display = "block";
+  // Check-in photo
+  if (state.checkinPhoto) {
+    document.getElementById("proof-ci-wrap").innerHTML = `<img src="${state.checkinPhoto}" style="width:100%;max-height:160px;object-fit:cover">`;
+    document.getElementById("proof-ci-time").textContent = tr.checkin_time ? "เวลา " + tr.checkin_time.slice(0,5) : "";
+  }
+  // Check-out photo
+  if (state.checkoutPhoto) {
+    document.getElementById("proof-co-wrap").innerHTML = `<img src="${state.checkoutPhoto}" style="width:100%;max-height:160px;object-fit:cover">`;
+    document.getElementById("proof-co-time").textContent = tr.checkout_time ? "เวลา " + tr.checkout_time.slice(0,5) : "";
+  }
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1143,7 +1203,8 @@ window.addEventListener("DOMContentLoaded", async () => {
       const res = await api("getMyData", {});
       if (res.ok) {
         // Session good — reconstruct today
-        const today = new Date().toISOString().slice(0,10);
+        const now   = new Date();
+        const today = now.toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" }); // YYYY-MM-DD Bangkok time
         const tr    = (res.records || []).find(r => r.date === today) || null;
         state.todayRecord = tr ? {
           checkin_time:  tr.checkin_time,
