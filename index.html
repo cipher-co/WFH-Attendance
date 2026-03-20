@@ -458,6 +458,14 @@ const API_URL = "https://script.google.com/macros/s/AKfycbwbI1hpDnZ_rl78zJEFKPUa
                 <span id="gps-text">กำลังระบุตำแหน่ง...</span>
               </div>
             </div>
+            <!-- Work Type -->
+            <div style="margin-bottom:12px">
+              <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">ประเภทการทำงาน</div>
+              <div style="display:flex;gap:8px">
+                <button id="btn-wfh" onclick="selectWorkType('WFH')" style="flex:1;padding:11px;border-radius:9px;border:2px solid var(--accent);background:#EFF6FF;color:var(--blue);font-size:13px;font-weight:700;cursor:pointer;letter-spacing:1px">WFH</button>
+                <button id="btn-wos" onclick="selectWorkType('WOS')" style="flex:1;padding:11px;border-radius:9px;border:2px solid var(--border2);background:#fff;color:var(--text2);font-size:13px;font-weight:700;cursor:pointer;letter-spacing:1px">WOS</button>
+              </div>
+            </div>
             <!-- Note -->
             <div style="margin-bottom:14px">
               <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">หมายเหตุ</div>
@@ -562,30 +570,65 @@ const API_URL = "https://script.google.com/macros/s/AKfycbwbI1hpDnZ_rl78zJEFKPUa
 
       <!-- ── SECTION: REPORT (Admin) ──────────────────────── -->
       <div id="section-report" style="display:none">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-          <div class="section-title" style="margin-bottom:0">รายงานรายเดือน</div>
-          <button class="btn-refresh" onclick="loadReport()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
-            โหลดใหม่
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div>
+            <div class="section-title" style="margin-bottom:2px">รายงาน</div>
+            <div style="font-size:11px;color:var(--text3)">รายงานการลงชื่อปฏิบัติงานทั้งหมด</div>
+          </div>
+          <button class="btn-refresh" onclick="exportCSV()" style="background:#10B981;color:#fff;border-color:#10B981;gap:5px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export CSV
           </button>
         </div>
-        <div class="filter-row">
-          <select class="filter-select" id="rpt-month">
-            <option value="1">มกราคม</option><option value="2">กุมภาพันธ์</option>
-            <option value="3">มีนาคม</option><option value="4">เมษายน</option>
-            <option value="5">พฤษภาคม</option><option value="6">มิถุนายน</option>
-            <option value="7">กรกฎาคม</option><option value="8">สิงหาคม</option>
-            <option value="9">กันยายน</option><option value="10">ตุลาคม</option>
-            <option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
-          </select>
-          <select class="filter-select" id="rpt-year"></select>
-          <button class="btn-refresh" onclick="loadReport()" style="background:var(--accent);color:#fff;border-color:var(--accent)">ดูรายงาน</button>
+        <!-- Filters -->
+        <div class="card" style="padding:16px;margin-bottom:14px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+            <div>
+              <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px">วันที่เริ่มต้น</div>
+              <input type="date" id="rpt-date-from" class="filter-select" style="width:100%">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px">วันที่สิ้นสุด</div>
+              <input type="date" id="rpt-date-to" class="filter-select" style="width:100%">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div>
+              <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px">ค้นหาชื่อ</div>
+              <input type="text" id="rpt-search" class="filter-select" placeholder="ค้นหาชื่อ..." style="width:100%;font-size:12px">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px">ประเภท</div>
+              <select id="rpt-type" class="filter-select" style="width:100%">
+                <option value="">ทั้งหมด</option>
+                <option value="WFH">WFH</option>
+                <option value="WOS">WOS</option>
+              </select>
+            </div>
+          </div>
+          <button onclick="loadReport()" style="width:100%;margin-top:12px;padding:10px;border-radius:9px;border:none;background:linear-gradient(135deg,#3B82F6,#1E4D8C);color:#fff;font-size:13px;font-weight:600;cursor:pointer">ดูรายงาน</button>
         </div>
+        <!-- Summary cards -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+          <div class="stat-card" style="text-align:center">
+            <div class="stat-val" id="rpt-total">0</div>
+            <div class="stat-lbl">ทั้งหมด</div>
+          </div>
+          <div class="stat-card" style="text-align:center">
+            <div class="stat-val" id="rpt-wfh-count" style="color:#3B82F6">0</div>
+            <div class="stat-lbl">WFH</div>
+          </div>
+          <div class="stat-card" style="text-align:center">
+            <div class="stat-val" id="rpt-wos-count" style="color:#10B981">0</div>
+            <div class="stat-lbl">WOS</div>
+          </div>
+        </div>
+        <!-- Table -->
         <div class="card">
           <div style="overflow-x:auto">
             <table class="admin-table">
               <thead><tr>
-                <th>พนักงาน</th><th>แผนก</th><th>จำนวนวัน</th><th>รวมชั่วโมง</th><th>เฉลี่ย/วัน</th>
+                <th>ชื่อ-นามสกุล</th><th>วันที่</th><th>ประเภท</th><th>เข้า</th><th>ออก</th><th>สถานที่</th><th>สถานะ</th>
               </tr></thead>
               <tbody id="report-tbody"></tbody>
             </table>
@@ -740,7 +783,7 @@ async function doLogout() {
   hideLoader();
   showPage("login");
   if (state.pollTimer) { clearInterval(state.pollTimer); state.pollTimer = null; }
-  state = { token: null, user: null, todayRecord: null, photoBase64: null, checkinPhoto: null, checkoutPhoto: null, lat: null, lng: null, pollTimer: null };
+  state = { token: null, user: null, todayRecord: null, photoBase64: null, checkinPhoto: null, checkoutPhoto: null, lat: null, lng: null, pollTimer: null, workType: 'WFH' };
 }
 
 // ════════════════════════════════════════════════════════════
@@ -834,16 +877,29 @@ function updateHomeBanner() {
 function initYearDropdowns() {
   const now = new Date();
   const y   = now.getFullYear();
-  ["hist-year","rpt-year"].forEach(id => {
-    const sel = document.getElementById(id);
-    sel.innerHTML = "";
+  // History only needs year dropdown
+  const histSel = document.getElementById("hist-year");
+  if (histSel) {
+    histSel.innerHTML = "";
     for (let i = y; i >= y - 2; i--) {
-      sel.appendChild(new Option(i, i, i === y, i === y));
+      histSel.appendChild(new Option(i, i, i === y, i === y));
     }
-  });
-  // Set current month
+  }
   document.getElementById("hist-month").value = now.getMonth() + 1;
-  document.getElementById("rpt-month").value  = now.getMonth() + 1;
+
+  // Report: set default date range (current month)
+  const firstDay = new Date(y, now.getMonth(), 1).toISOString().slice(0,10);
+  const today    = now.toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
+  const fromEl   = document.getElementById("rpt-date-from");
+  const toEl     = document.getElementById("rpt-date-to");
+  if (fromEl) fromEl.value = firstDay;
+  if (toEl)   toEl.value   = today;
+
+  // Live filter on search/type change
+  const searchEl = document.getElementById("rpt-search");
+  const typeEl   = document.getElementById("rpt-type");
+  if (searchEl) searchEl.addEventListener("input", renderReport);
+  if (typeEl)   typeEl.addEventListener("change", renderReport);
 }
 
 // ════════════════════════════════════════════════════════════
@@ -873,7 +929,8 @@ async function doCheckin() {
     const res = await api("checkin", {
       photo_base64: state.photoBase64 || null,
       lat: state.lat, lng: state.lng,
-      note: document.getElementById("home-note").value.trim()
+      note: document.getElementById("home-note").value.trim(),
+      work_type: state.workType || "WFH"
     });
     if (!res.ok) { 
       showToast("❌ " + res.msg, "error"); 
@@ -995,6 +1052,16 @@ function resetPhoto() {
   prev.style.border = "";
   prev.style.position = "";
   prev.innerHTML = `<div class="photo-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><span style="font-weight:600;color:#EF4444">แตะเพื่อเปิดกล้องถ่ายรูป</span><span style="font-size:10px;color:var(--text3)">ไม่สามารถเลือกรูปจาก gallery ได้</span></div>`;
+}
+
+function selectWorkType(type) {
+  state.workType = type;
+  document.getElementById("btn-wfh").style.borderColor = type === "WFH" ? "var(--accent)" : "var(--border2)";
+  document.getElementById("btn-wfh").style.background  = type === "WFH" ? "#EFF6FF" : "#fff";
+  document.getElementById("btn-wfh").style.color       = type === "WFH" ? "var(--blue)" : "var(--text2)";
+  document.getElementById("btn-wos").style.borderColor = type === "WOS" ? "#10B981" : "var(--border2)";
+  document.getElementById("btn-wos").style.background  = type === "WOS" ? "#F0FDF4" : "#fff";
+  document.getElementById("btn-wos").style.color       = type === "WOS" ? "#065F46" : "var(--text2)";
 }
 
 function showPhotoProof() {
@@ -1132,31 +1199,94 @@ function startAdminPoll() {
 // ════════════════════════════════════════════════════════════
 //  ADMIN: REPORT
 // ════════════════════════════════════════════════════════════
+let reportData = [];
+
 async function loadReport() {
-  const month = document.getElementById("rpt-month").value;
-  const year  = document.getElementById("rpt-year").value;
-  const tbody = document.getElementById("report-tbody");
-  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text3)">กำลังโหลด...</td></tr>';
+  const dateFrom = document.getElementById("rpt-date-from").value;
+  const dateTo   = document.getElementById("rpt-date-to").value;
+  const tbody    = document.getElementById("report-tbody");
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">กำลังโหลด...</td></tr>';
   try {
-    const res = await api("getSummary", { month, year });
-    if (!res.ok) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--red)">${res.msg}</td></tr>`; return; }
-    if (!res.summary.length) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text3)">ไม่มีข้อมูล</td></tr>';
-      return;
+    const res = await api("getAllRecords", { date_from: dateFrom, date_to: dateTo });
+    if (!res.ok) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--red)">${res.msg}</td></tr>`; return; }
+    reportData = res.records || [];
+    renderReport();
+  } catch(e) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--red)">${e.message}</td></tr>`; }
+}
+
+function renderReport() {
+  const search   = (document.getElementById("rpt-search").value || "").toLowerCase();
+  const typeFilter = document.getElementById("rpt-type").value;
+  const tbody    = document.getElementById("report-tbody");
+
+  let filtered = reportData.filter(r => {
+    const nameMatch = !search || (r.name || "").toLowerCase().includes(search);
+    const typeMatch = !typeFilter || (r.work_type || "WFH") === typeFilter;
+    return nameMatch && typeMatch;
+  });
+
+  const wfhCount = filtered.filter(r => (r.work_type || "WFH") === "WFH").length;
+  const wosCount = filtered.filter(r => r.work_type === "WOS").length;
+  document.getElementById("rpt-total").textContent     = filtered.length;
+  document.getElementById("rpt-wfh-count").textContent = wfhCount;
+  document.getElementById("rpt-wos-count").textContent = wosCount;
+
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">ไม่มีข้อมูล</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(r => {
+    const ciTime = formatTime(r.checkin_time);
+    const coTime = formatTime(r.checkout_time);
+    const isLate = ciTime !== "--:--" && ciTime > "08:00";
+    const wtype  = r.work_type || "WFH";
+    const location = r.checkin_location || "-";
+    let statusBadge = "";
+    if (!r.checkout_time) {
+      statusBadge = '<span class="badge badge-blue">กำลังทำงาน</span>';
+    } else if (isLate) {
+      statusBadge = '<span class="badge badge-amber">สาย</span>';
+    } else {
+      statusBadge = '<span class="badge badge-green">ออกแล้ว</span>';
     }
-    tbody.innerHTML = res.summary.map(s => `
-      <tr>
-        <td><div style="display:flex;align-items:center;gap:8px">
-          <div class="avatar">${(s.name||"?")[0]}</div>
-          <div><div style="font-weight:600;font-size:12px">${s.name}</div>
-          <div style="font-size:10px;color:var(--text3)">${s.emp_id}</div></div>
-        </div></td>
-        <td style="color:var(--text2)">${s.department||"-"}</td>
-        <td style="font-family:'JetBrains Mono',monospace;font-weight:600">${s.days} วัน</td>
-        <td style="font-family:'JetBrains Mono',monospace;color:var(--accent);font-weight:600">${s.total_hours} ชม.</td>
-        <td style="font-family:'JetBrains Mono',monospace;color:var(--text2)">${s.avg_hours} ชม.</td>
-      </tr>`).join("");
-  } catch(e) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--red)">${e.message}</td></tr>`; }
+    const wtypeBadge = wtype === "WFH"
+      ? '<span style="background:#EFF6FF;color:#1E40AF;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700">WFH</span>'
+      : '<span style="background:#F0FDF4;color:#065F46;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700">WOS</span>';
+    const dateStr = r.date ? new Date(r.date).toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"2-digit" }) : "-";
+    return `<tr>
+      <td><div style="display:flex;align-items:center;gap:8px">
+        <div class="avatar">${(r.name||"?")[0]}</div>
+        <div><div style="font-weight:600;font-size:12px">${r.name||"-"}</div>
+        <div style="font-size:10px;color:var(--text3)">${r.emp_id||""}</div></div>
+      </div></td>
+      <td style="font-size:12px">${dateStr}</td>
+      <td>${wtypeBadge}</td>
+      <td><span class="hist-val">${ciTime}</span></td>
+      <td><span class="hist-val">${coTime}</span></td>
+      <td style="font-size:11px;color:var(--text2);max-width:180px">${location}</td>
+      <td>${statusBadge}</td>
+    </tr>`;
+  }).join("");
+}
+
+function exportCSV() {
+  if (!reportData.length) { showToast("ไม่มีข้อมูล กรุณาดูรายงานก่อน", "error"); return; }
+  const headers = ["ชื่อ","รหัส","แผนก","วันที่","ประเภท","Check-in","Check-out","สถานที่","สถานะ"];
+  const rows = reportData.map(r => {
+    const ci = formatTime(r.checkin_time);
+    const co = formatTime(r.checkout_time);
+    const isLate = ci !== "--:--" && ci > "08:00";
+    const status = !r.checkout_time ? "กำลังทำงาน" : isLate ? "สาย" : "ออกแล้ว";
+    return [r.name, r.emp_id, r.department, r.date, r.work_type||"WFH", ci, co, r.checkin_location||"", status].join(",");
+  });
+  const csv = "﻿" + [headers.join(","), ...rows].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = "attendance_report.csv";
+  a.click();
 }
 
 // ════════════════════════════════════════════════════════════
