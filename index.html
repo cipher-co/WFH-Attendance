@@ -1073,8 +1073,7 @@ async function loadHistory() {
         : r.status === "checked_in"
           ? '<span class="badge badge-blue">กำลังทำงาน</span>'
           : '<span class="badge badge-gray">-</span>';
-      const ciPhotoUrl = r.checkin_photo ? r.checkin_photo.replace('&export=download','') + '&export=view' : '';
-      const coPhotoUrl = r.checkout_photo ? r.checkout_photo.replace('&export=download','') + '&export=view' : '';
+
       return `
       <div class="hist-card">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
@@ -1085,10 +1084,7 @@ async function loadHistory() {
         <div class="hist-row"><span class="hist-label">Check-out</span><span class="hist-val">${formatTime(r.checkout_time)}</span></div>
         ${r.work_hours ? `<div class="hist-row"><span class="hist-label">Work hours</span><span class="hist-hours">${r.work_hours} hrs.</span></div>` : ""}
         ${r.note ? `<div style="margin-top:8px;font-size:11px;color:var(--text2);padding:7px 10px;background:#F8FAFC;border-radius:7px">${r.note}</div>` : ""}
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
-          ${ciPhotoUrl ? `<div><div style="font-size:9px;font-weight:700;color:#065F46;background:#D1FAE5;padding:2px 6px;border-radius:8px;display:inline-block;margin-bottom:4px">Check-in</div><img class="photo-thumb" src="${ciPhotoUrl}" style="width:100%;height:80px;object-fit:cover;border-radius:8px" onerror="this.parentElement.innerHTML='<div style=\'font-size:10px;color:var(--text3)\'>รูปไม่สามารถแสดงได้</div>'" onclick="openPhotoModal('${r.checkin_photo}')"></div>` : ""}
-          ${coPhotoUrl ? `<div><div style="font-size:9px;font-weight:700;color:#1E40AF;background:#DBEAFE;padding:2px 6px;border-radius:8px;display:inline-block;margin-bottom:4px">Check-out</div><img class="photo-thumb" src="${coPhotoUrl}" style="width:100%;height:80px;object-fit:cover;border-radius:8px" onerror="this.parentElement.innerHTML='<div style=\'font-size:10px;color:var(--text3)\'>รูปไม่สามารถแสดงได้</div>'" onclick="openPhotoModal('${r.checkout_photo}')"></div>` : ""}
-        </div>
+
       </div>`;
     }).join("");
   } catch(e) { el.innerHTML = `<div class="empty-state">${e.message}</div>`; }
