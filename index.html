@@ -421,7 +421,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbwbI1hpDnZ_rl78zJEFKPUa
             <span class="status-dot" id="home-dot"></span>
             <span id="home-status-text">ยังไม่ได้เช็คอิน</span>
           </div>
-          <div id="home-late-badge" style="display:none;margin-top:8px"><span class="badge badge-red">สาย</span></div>
+          <div id="home-late-badge" style="display:none;margin-top:10px"><span style="background:#EF4444;color:#fff;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:0.5px">สาย</span></div>
         </div>
 
         <div class="card" style="margin-bottom:14px">
@@ -1178,16 +1178,9 @@ async function loadHistory() {
     el.innerHTML = res.records.map(r => {
       const ciTime = formatTime(r.checkin_time);
       const isLate = isCheckInLate(ciTime);
-      let statusBadge;
-      if (r.status === "checked_in") {
-        statusBadge = '<span class="badge badge-blue">กำลังทำงาน</span>';
-      } else if (r.status === "completed" && isLate) {
-        statusBadge = '<span class="badge badge-red">สาย</span>';
-      } else if (r.status === "completed") {
-        statusBadge = '<span class="badge badge-green">เสร็จสิ้น</span>';
-      } else {
-        statusBadge = '<span class="badge badge-gray">-</span>';
-      }
+      const statusBadge = isLate
+        ? '<span class="badge badge-red">สาย</span>'
+        : '';
 
       return `
       <div class="hist-card">
