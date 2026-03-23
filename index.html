@@ -507,6 +507,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbwbI1hpDnZ_rl78zJEFKPUa
                 <div>
                   <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px;display:flex;align-items:center;gap:4px">
                     <span style="background:#10B981;color:#fff;padding:2px 7px;border-radius:10px;font-size:9px">Check-in</span>
+                    <span id="proof-late-badge" style="display:none;background:#EF4444;color:#fff;padding:2px 9px;border-radius:10px;font-size:9px;font-weight:700">สาย</span>
                   </div>
                   <div id="proof-ci-wrap" style="border-radius:10px;overflow:hidden;border:1px solid var(--border);min-height:80px;display:flex;align-items:center;justify-content:center;background:#F8FAFC">
                     <span style="font-size:11px;color:var(--text3)">ยังไม่ได้ถ่าย</span>
@@ -1108,6 +1109,12 @@ function showPhotoProof() {
   const tr = state.todayRecord;
   if (!tr) return;
   document.getElementById("photo-proof").style.display = "block";
+  // แสดง badge สาย ถัดจาก Check-in label
+  const lateBadge = document.getElementById("proof-late-badge");
+  if (lateBadge) {
+    const ciTime = formatTime(tr.checkin_time);
+    lateBadge.style.display = isCheckInLate(ciTime) ? "inline-block" : "none";
+  }
   // Check-in photo
   if (state.checkinPhoto) {
     document.getElementById("proof-ci-wrap").innerHTML = `<img src="${state.checkinPhoto}" style="width:100%;max-height:160px;object-fit:cover">`;
