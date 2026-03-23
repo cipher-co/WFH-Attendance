@@ -421,6 +421,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbwbI1hpDnZ_rl78zJEFKPUa
             <span class="status-dot" id="home-dot"></span>
             <span id="home-status-text">ยังไม่ได้เช็คอิน</span>
           </div>
+          <div id="home-late-badge" style="display:none;margin-top:8px"><span class="badge badge-red">สาย</span></div>
         </div>
 
         <div class="card" style="margin-bottom:14px">
@@ -872,27 +873,43 @@ function enterApp() {
   if (isAdmin) startAdminPoll();
 }
 
+function isCheckInLate(timeStr) {
+  if (!timeStr || timeStr === "--:--") return false;
+  const parts = timeStr.split(":");
+  if (parts.length < 2) return false;
+  const h = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  if (isNaN(h) || isNaN(m)) return false;
+  return h > 8 || (h === 8 && m > 0);
+}
+
 function updateHomeBanner() {
-  const tr = state.todayRecord;
-  const dot  = document.getElementById("home-dot");
-  const txt  = document.getElementById("home-status-text");
-  const ciBtn = document.getElementById("btn-checkin");
-  const coBtn = document.getElementById("btn-checkout");
-  const statCi = document.getElementById("stat-ci");
-  const statCo = document.getElementById("stat-co");
+  const tr        = state.todayRecord;
+  const dot       = document.getElementById("home-dot");
+  const txt       = document.getElementById("home-status-text");
+  const ciBtn     = document.getElementById("btn-checkin");
+  const coBtn     = document.getElementById("btn-checkout");
+  const statCi    = document.getElementById("stat-ci");
+  const statCo    = document.getElementById("stat-co");
+  const lateBadge = document.getElementById("home-late-badge");
   if (!tr || !tr.checkin_time) {
     dot.className = "status-dot"; txt.textContent = "ยังไม่ได้เช็คอิน";
     ciBtn.disabled = false; coBtn.disabled = true;
     statCi.textContent = "--:--"; statCo.textContent = "--:--";
+    lateBadge.style.display = "none";
   } else if (tr.checkin_time && !tr.checkout_time) {
+    const ciTime = formatTime(tr.checkin_time);
     dot.className = "status-dot in"; txt.textContent = "กำลังทำงาน WFH";
     ciBtn.disabled = true; coBtn.disabled = false;
-    statCi.textContent = tr.checkin_time.slice(0,5); statCo.textContent = "--:--";
+    statCi.textContent = ciTime; statCo.textContent = "--:--";
+    lateBadge.style.display = isCheckInLate(ciTime) ? "block" : "none";
   } else {
+    const ciTime = formatTime(tr.checkin_time);
     dot.className = "status-dot done"; txt.textContent = "เสร็จสิ้นวันนี้";
     ciBtn.disabled = true; coBtn.disabled = true;
-    statCi.textContent = tr.checkin_time.slice(0,5);
-    statCo.textContent = tr.checkout_time ? tr.checkout_time.slice(0,5) : "--:--";
+    statCi.textContent = ciTime;
+    statCo.textContent = tr.checkout_time ? formatTime(tr.checkout_time) : "--:--";
+    lateBadge.style.display = isCheckInLate(ciTime) ? "block" : "none";
   }
 }
 
@@ -1159,11 +1176,18 @@ async function loadHistory() {
       return;
     }
     el.innerHTML = res.records.map(r => {
-      const statusBadge = r.status === "completed"
-        ? '<span class="badge badge-green">เสร็จสิ้น</span>'
-        : r.status === "checked_in"
-          ? '<span class="badge badge-blue">กำลังทำงาน</span>'
-          : '<span class="badge badge-gray">-</span>';
+      const ciTime = formatTime(r.checkin_time);
+      const isLate = isCheckInLate(ciTime);
+      let statusBadge;
+      if (r.status === "checked_in") {
+        statusBadge = '<span class="badge badge-blue">กำลังทำงาน</span>';
+      } else if (r.status === "completed" && isLate) {
+        statusBadge = '<span class="badge badge-red">สาย</span>';
+      } else if (r.status === "completed") {
+        statusBadge = '<span class="badge badge-green">เสร็จสิ้น</span>';
+      } else {
+        statusBadge = '<span class="badge badge-gray">-</span>';
+      }
 
       return `
       <div class="hist-card">
@@ -1198,7 +1222,7 @@ async function loadToday() {
     document.getElementById("today-title").textContent = `รายการวันที่ ${res.date}`;
     document.getElementById("today-tbody").innerHTML = res.records.map(r => {
       const ct = formatTime(r.checkin_time);
-      const late = ct !== "--:--" && ct > "08:00";
+      const late = isCheckInLate(ct);
       const statusBadge = late && r.status === 'completed'
         ? '<span class="badge badge-red">สาย</span>'
         : r.status === 'completed' ? '<span class="badge badge-green">เสร็จ</span>'
@@ -1299,7 +1323,7 @@ function renderReport() {
   tbody.innerHTML = filtered.map(r => {
     const ciTime = formatTime(r.checkin_time);
     const coTime = formatTime(r.checkout_time);
-    const isLate = ciTime !== "--:--" && ciTime > "08:00";
+    const isLate = isCheckInLate(ciTime);
     const wtype  = r.work_type || "WFH";
     const location = r.checkin_location || "-";
     let statusBadge = "";
@@ -1336,7 +1360,7 @@ function exportCSV() {
   const rows = reportData.map(r => {
     const ci = formatTime(r.checkin_time);
     const co = formatTime(r.checkout_time);
-    const isLate = ci !== "--:--" && ci > "08:00";
+    const isLate = isCheckInLate(ci);
     const status = !r.checkout_time ? "กำลังทำงาน" : isLate ? "สาย" : "ออกแล้ว";
     return [r.name, r.emp_id, r.department, r.date, r.work_type||"WFH", ci, co, r.checkin_location||"", status].join(",");
   });
