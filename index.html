@@ -560,7 +560,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbwbI1hpDnZ_rl78zJEFKPUa
           <div style="overflow-x:auto">
             <table class="admin-table">
               <thead><tr>
-                <th>Employee</th><th>Department</th><th>Check-in</th><th>Check-out</th><th>Hours</th><th>Status</th><th>Photo</th>
+                <th>Employee</th><th>Department</th><th>Check-in</th><th>Check-out</th><th>Hours</th><th>Status</th><th>Photo</th><th>Reset</th>
               </tr></thead>
               <tbody id="today-tbody"></tbody>
             </table>
@@ -699,6 +699,28 @@ const API_URL = "https://script.google.com/macros/s/AKfycbwbI1hpDnZ_rl78zJEFKPUa
       <a id="photo-modal-link" href="#" target="_blank" style="padding:10px 20px;background:var(--accent);color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none">เปิดรูปในแท็บใหม่</a>
     </div>
     <button class="btn-cancel" style="margin-top:14px;width:100%" onclick="closePhotoModal()">ปิด</button>
+  </div>
+</div>
+
+<!-- ── RESET CONFIRM MODAL ──────────────────────────────────── -->
+<div id="reset-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeResetModal()">
+  <div class="modal-box" style="max-width:360px">
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="width:48px;height:48px;border-radius:50%;background:#FEE2E2;display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" width="24" height="24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+      </div>
+      <div class="modal-title" style="margin-bottom:6px">ยืนยันการ Reset</div>
+      <div style="font-size:13px;color:var(--text2)">ลบข้อมูล Check-in/out ของ</div>
+      <div style="font-size:15px;font-weight:700;color:var(--navy);margin:6px 0" id="reset-modal-name"></div>
+      <div style="font-size:12px;color:var(--text2)">วันที่ <span id="reset-modal-date" style="font-weight:600;color:var(--text1)"></span></div>
+      <div style="margin-top:10px;padding:9px 14px;background:#FEF3C7;border-radius:8px;font-size:11px;color:#92400E">
+        ⚠️ User จะสามารถ Check-in ใหม่ได้ในวันเดิม
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeResetModal()">ยกเลิก</button>
+      <button onclick="doReset()" style="flex:1;padding:11px;border-radius:9px;border:none;background:linear-gradient(135deg,#EF4444,#DC2626);color:#fff;font-size:13px;font-weight:600;cursor:pointer">ยืนยัน Reset</button>
+    </div>
   </div>
 </div>
 
@@ -1174,8 +1196,15 @@ async function loadToday() {
       <div class="sum-card amber"><div class="sum-num">${s.not_yet}</div><div class="sum-lbl">ยังไม่เช็คอิน</div></div>
     `;
     document.getElementById("today-title").textContent = `รายการวันที่ ${res.date}`;
-    document.getElementById("today-tbody").innerHTML = res.records.map(r => `
-      <tr>
+    document.getElementById("today-tbody").innerHTML = res.records.map(r => {
+      const ct = formatTime(r.checkin_time);
+      const late = ct !== "--:--" && ct > "08:00";
+      const statusBadge = late && r.status === 'completed'
+        ? '<span class="badge badge-amber">สาย</span>'
+        : r.status === 'completed' ? '<span class="badge badge-green">เสร็จ</span>'
+        : r.status === 'checked_in' ? '<span class="badge badge-blue">ทำงาน</span>'
+        : '<span class="badge badge-gray">-</span>';
+      return `<tr>
         <td><div style="display:flex;align-items:center;gap:8px">
           <div class="avatar">${(r.name||"?")[0]}</div>
           <div><div style="font-weight:600;font-size:12px">${r.name}</div>
@@ -1185,10 +1214,39 @@ async function loadToday() {
         <td><span class="hist-val">${formatTime(r.checkin_time)}</span></td>
         <td><span class="hist-val">${formatTime(r.checkout_time) !== '--:--' ? formatTime(r.checkout_time) : '-'}</span></td>
         <td class="hist-hours">${r.work_hours || '-'}</td>
-        <td>${r.status === 'completed' ? '<span class="badge badge-green">เสร็จ</span>' : r.status === 'checked_in' ? '<span class="badge badge-blue">ทำงาน</span>' : '<span class="badge badge-gray">-</span>'}</td>
+        <td>${statusBadge}</td>
         <td>${r.checkin_photo ? `<img class="photo-thumb" src="${r.checkin_photo}" onclick="openPhotoModal('${r.checkin_photo}')">` : '-'}</td>
-      </tr>`).join("") || '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">ยังไม่มีการเช็คอินวันนี้</td></tr>';
+        <td><button onclick="confirmReset('${r.user_id}','${r.name}','${res.date}')"
+          style="padding:4px 10px;border-radius:7px;border:1.5px solid #FCA5A5;background:#FFF5F5;color:#DC2626;font-size:10px;font-weight:700;cursor:pointer">Reset</button></td>
+      </tr>`;
+    }).join("") || '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text3)">ยังไม่มีการเช็คอินวันนี้</td></tr>';
   } catch(e) {}
+}
+
+function confirmReset(userId, userName, date) {
+  const modal = document.getElementById("reset-modal");
+  document.getElementById("reset-modal-name").textContent = userName;
+  document.getElementById("reset-modal-date").textContent = date;
+  modal.dataset.userId = userId;
+  modal.dataset.date   = date;
+  modal.style.display  = "flex";
+}
+function closeResetModal() {
+  document.getElementById("reset-modal").style.display = "none";
+}
+async function doReset() {
+  const modal  = document.getElementById("reset-modal");
+  const userId = modal.dataset.userId;
+  const date   = modal.dataset.date;
+  closeResetModal();
+  showLoader();
+  try {
+    const res = await api("resetAttendance", { target_user_id: userId, target_date: date });
+    if (!res.ok) { showToast("❌ " + res.msg, "error"); return; }
+    showToast("✅ " + res.msg, "success");
+    loadToday();
+  } catch(e) { showToast(e.message, "error"); }
+  finally { hideLoader(); }
 }
 
 function startAdminPoll() {
