@@ -1159,11 +1159,18 @@ async function loadHistory() {
       return;
     }
     el.innerHTML = res.records.map(r => {
-      const statusBadge = r.status === "completed"
-        ? '<span class="badge badge-green">เสร็จสิ้น</span>'
-        : r.status === "checked_in"
-          ? '<span class="badge badge-blue">กำลังทำงาน</span>'
-          : '<span class="badge badge-gray">-</span>';
+      const ciTime = formatTime(r.checkin_time);
+      const isLate = isCheckInLate(ciTime);
+      let statusBadge;
+      if (r.status === "checked_in") {
+        statusBadge = '<span class="badge badge-blue">กำลังทำงาน</span>';
+      } else if (r.status === "completed" && isLate) {
+        statusBadge = '<span class="badge badge-amber">สาย</span>';
+      } else if (r.status === "completed") {
+        statusBadge = '<span class="badge badge-green">เสร็จสิ้น</span>';
+      } else {
+        statusBadge = '<span class="badge badge-gray">-</span>';
+      }
 
       return `
       <div class="hist-card">
@@ -1198,7 +1205,7 @@ async function loadToday() {
     document.getElementById("today-title").textContent = `รายการวันที่ ${res.date}`;
     document.getElementById("today-tbody").innerHTML = res.records.map(r => {
       const ct = formatTime(r.checkin_time);
-      const late = ct !== "--:--" && ct > "08:00";
+      const late = isCheckInLate(ct);
       const statusBadge = late && r.status === 'completed'
         ? '<span class="badge badge-amber">สาย</span>'
         : r.status === 'completed' ? '<span class="badge badge-green">เสร็จ</span>'
@@ -1299,7 +1306,7 @@ function renderReport() {
   tbody.innerHTML = filtered.map(r => {
     const ciTime = formatTime(r.checkin_time);
     const coTime = formatTime(r.checkout_time);
-    const isLate = ciTime !== "--:--" && ciTime > "08:00";
+    const isLate = isCheckInLate(ciTime);
     const wtype  = r.work_type || "WFH";
     const location = r.checkin_location || "-";
     let statusBadge = "";
@@ -1336,7 +1343,7 @@ function exportCSV() {
   const rows = reportData.map(r => {
     const ci = formatTime(r.checkin_time);
     const co = formatTime(r.checkout_time);
-    const isLate = ci !== "--:--" && ci > "08:00";
+    const isLate = isCheckInLate(ci);
     const status = !r.checkout_time ? "กำลังทำงาน" : isLate ? "สาย" : "ออกแล้ว";
     return [r.name, r.emp_id, r.department, r.date, r.work_type||"WFH", ci, co, r.checkin_location||"", status].join(",");
   });
@@ -1401,6 +1408,18 @@ function closePhotoModal() { document.getElementById("photo-modal").style.displa
 function formatThaiDate(dateStr) {
   const d = new Date(dateStr);
   return d.toLocaleDateString("th-TH", { weekday:"short", year:"numeric", month:"short", day:"numeric" });
+}
+
+// ตรวจสอบว่า check-in สาย (หลัง 08:00 น.) — เปรียบเทียบด้วยตัวเลข ไม่ใช่ string
+function isCheckInLate(timeStr) {
+  if (!timeStr || timeStr === "--:--") return false;
+  const parts = timeStr.split(":");
+  if (parts.length < 2) return false;
+  const h = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  if (isNaN(h) || isNaN(m)) return false;
+  // สาย = หลัง 08:00 น. (08:01 ขึ้นไป)
+  return h > 8 || (h === 8 && m > 0);
 }
 
 function formatTime(timeStr) {
